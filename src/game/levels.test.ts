@@ -171,7 +171,7 @@ describe('balanced original supply with independent positions and explicit abili
     }
   });
 
-  it.each(['solo', 'coop'] as const)('keeps medium/large %s gold and loose diamonds below the upper 40%, including conversions', (mode) => {
+  it.each(['solo', 'coop'] as const)('keeps generated medium/large %s gold and loose diamonds below the upper 40%', (mode) => {
     const abilitySets: AbilityId[][] = [[], ['diamond-vein', 'diamond-moles']];
     for (const abilities of abilitySets) {
       for (const level of [...Array.from({ length: 100 }, (_, index) => index + 1), 1000, 1_000_000]) {
@@ -279,10 +279,10 @@ describe('balanced original supply with independent positions and explicit abili
 
   it.each(['solo', 'coop'] as const)('keeps %s mines in bounds, reachable and separated even with every extra spawn', (mode) => {
     const stages = [...Array.from({ length: 150 }, (_, index) => index + 1), 1000, 10_000, 1_000_000];
-    const abilities: AbilityId[] = ['moneybags', 'diamond-moles', 'bomb-expert', 'risk-reward'];
+    const abilities: AbilityId[] = ['moneybags', 'diamond-moles', 'archaeologist', 'fossil-puzzle'];
     for (const level of stages) {
       const entities = createLevel(level, mode, { abilities });
-      expect(entities.length).toBeLessThanOrEqual(32);
+      expect(entities.length).toBeLessThanOrEqual(36);
       expect(new Set(entities.map((entity) => entity.id)).size).toBe(entities.length);
       const origins = mode === 'solo' ? [600] : [360, 840];
       for (const [index, entity] of entities.entries()) {

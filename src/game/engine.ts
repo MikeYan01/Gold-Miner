@@ -1,5 +1,5 @@
 import {
-  createLevel, createShop, disarmTnt, getLevelInfo, HEIGHT,
+  applyRoundValue, createLevel, createShop, disarmTnt, getLevelInfo, HEIGHT,
   makeEntity, MAX_ANGLE, MOLE_VALUE, ORIGIN_Y, REST_LENGTH, WIDTH,
 } from './levels';
 import type {
@@ -9,8 +9,8 @@ import { createViewport, DEFAULT_VIEWPORT, projectPoint } from './viewport';
 import type { Viewport } from './viewport';
 import { createRandom, randomInteger } from './random';
 import {
-  ARCHAEOLOGIST_VALUE_MULTIPLIER, canAcquireAbility, CLONE_REWARD_MULTIPLIER,
-  DIAMOND_COLLECTOR_BONUS_PERCENT, FOSSIL_PUZZLE_BONUS, GOLD_COLLECTOR_BONUS_PERCENT, GOLD_GROWTH_INTERVAL,
+  ALCHEMY_CHANCE, ARCHAEOLOGIST_VALUE_MULTIPLIER, BUZZER_DELIVERY_VALUE_MULTIPLIER, canAcquireAbility, CLONE_REWARD_MULTIPLIER,
+  DIAMOND_COLLECTOR_BONUS_PERCENT, DIAMOND_VEIN_CHANCE, FOSSIL_PUZZLE_BONUS, GOLD_COLLECTOR_BONUS_PERCENT, GOLD_GROWTH_INTERVAL,
   drawAbilityOffers, getAbility, haulingMultiplier, hookRadius,
   needsAbilityChoice, RISK_RADIUS_MULTIPLIER, RISK_VALUE_MULTIPLIER, RUSH_DURATION_MULTIPLIER, RUSH_VALUE_MULTIPLIER,
   SLOW_FUSE_SECONDS, TIME_BANK_COINS_PER_SECOND,
@@ -408,9 +408,15 @@ export class GameEngine {
           }
           this.explodeTnt(entity);
           Object.assign(entity, makeEntity('tnt-fragment', entity.x, entity.y, entity.id));
-        } else if (entity.kind.startsWith('rock') && this.state.abilities.includes('alchemy') && this.random() < 0.2) {
+        } else if (entity.kind.startsWith('rock') && this.state.abilities.includes('alchemy') && this.random() < ALCHEMY_CHANCE) {
           Object.assign(entity, makeEntity('gold-large', entity.x, entity.y, entity.id));
           this.burst(entity.x, entity.y, '#fff075', 24);
+          this.sound('gem');
+        }
+        if (entity.kind.startsWith('gold') && this.state.abilities.includes('diamond-vein') && this.random() < DIAMOND_VEIN_CHANCE) {
+          Object.assign(entity, makeEntity('diamond', entity.x, entity.y, entity.id));
+          applyRoundValue(entity, this.state.activeUpgrades);
+          this.burst(entity.x, entity.y, '#b8f5ff', 24);
           this.sound('gem');
         }
         if (entity.kind === 'tnt') disarmTnt(entity);
@@ -464,7 +470,7 @@ export class GameEngine {
     cargo.y = tip.y + y * cargo.radius * 0.42 / directionScale;
   }
 
-  private collect(player: Player, entity: Entity): void {
+  private collect(player: Player, entity: Entity, valueMultiplier = 1): void {
     const state = this.state;
     if (entity.kind === 'bag' && entity.bagReward === null) throw new Error('A collected mystery bag has no initialized reward.');
     entity.active = false;
@@ -472,21 +478,22 @@ export class GameEngine {
     state.collected++;
     let value = entity.value;
     const cloneMultiplier = entity.id === state.clonedEntityId ? CLONE_REWARD_MULTIPLIER : 1;
-    const treasureMultiplier = (entity.riskBonus ? RISK_VALUE_MULTIPLIER : 1)
-      * (state.abilities.includes('time-rush') ? RUSH_VALUE_MULTIPLIER : 1);
+    // Pre-multiplying these factors can round half-coin payouts down.
+    const riskMultiplier = entity.riskBonus ? RISK_VALUE_MULTIPLIER : 1;
+    const rushMultiplier = state.abilities.includes('time-rush') ? RUSH_VALUE_MULTIPLIER : 1;
     let label: DisplayText = '';
     let sound: Sound = 'gold';
     if (entity.kind.startsWith('gold')) {
       state.goldCollected++;
       if (state.abilities.includes('gold-collector')) value += value * GOLD_COLLECTOR_BONUS_PERCENT / 100;
-      value *= treasureMultiplier;
+      value = value * riskMultiplier * rushMultiplier;
     }
     if (entity.kind === 'diamond' || entity.kind === 'mole-diamond') {
       state.diamondsCollected++;
       const bodyValue = entity.kind === 'mole-diamond' ? MOLE_VALUE : 0;
       let diamondValue = entity.value - bodyValue;
       if (state.abilities.includes('diamond-collector')) diamondValue += diamondValue * DIAMOND_COLLECTOR_BONUS_PERCENT / 100;
-      value = bodyValue + diamondValue * treasureMultiplier;
+      value = bodyValue + diamondValue * riskMultiplier * rushMultiplier;
       sound = 'gem';
     }
     if (entity.kind.startsWith('rock')) {
@@ -514,7 +521,7 @@ export class GameEngine {
       state.fossilPieces.push(entity.kind);
       if (state.fossilPieces.length === 2) fossilBonus = FOSSIL_PUZZLE_BONUS;
     }
-    value = Math.round(value) * cloneMultiplier + fossilBonus;
+    value = Math.round(value) * cloneMultiplier * valueMultiplier + fossilBonus;
     state.score += value;
     player.earned += value;
     player.roundEarned += value;
@@ -559,7 +566,7 @@ export class GameEngine {
       this.burst(charge.x, charge.y, '#e77636', 36);
       this.float(charge.x, charge.y - 40 / this.viewport.stretchY, 'BOOM!', '#a94529');
       for (const entity of this.state.entities) {
-        if (!entity.active || !inTntBlast(charge, entity, this.viewport)) continue;
+        if (!entity.active || entity.claimedBy !== null || !inTntBlast(charge, entity, this.viewport)) continue;
         if (entity.kind === 'tnt') queue.push(entity);
         else {
           this.burst(entity.x, entity.y, '#ac8250', 8);
@@ -607,7 +614,7 @@ export class GameEngine {
       for (const player of state.players) {
         const cargo = state.entities.find((entity) => entity.active && entity.id === player.cargoId);
         if (!cargo) continue;
-        this.collect(player, cargo);
+        this.collect(player, cargo, BUZZER_DELIVERY_VALUE_MULTIPLIER);
         player.cargoId = null;
         player.reel = null;
         player.phase = 'swinging';

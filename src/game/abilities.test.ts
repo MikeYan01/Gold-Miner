@@ -116,10 +116,10 @@ describe('the shared four-pick draft', () => {
       ['gold-small', [], false, 150],
       ['gold-medium', [], false, 375],
       ['gold-large', [], false, 750],
-      ['gold-tiny', ['gold-collector'], false, 86],
-      ['gold-small', ['gold-collector'], false, 173],
-      ['gold-medium', ['gold-collector'], false, 431],
-      ['gold-large', ['gold-collector'], false, 863],
+      ['gold-tiny', ['gold-collector'], false, 98],
+      ['gold-small', ['gold-collector'], false, 195],
+      ['gold-medium', ['gold-collector'], false, 488],
+      ['gold-large', ['gold-collector'], false, 975],
       ['diamond', [], false, 900],
       ['diamond', [], true, 1350],
       ['diamond', ['diamond-collector'], false, 1035],
@@ -188,7 +188,7 @@ describe('the shared four-pick draft', () => {
       engine.state.entities.push(makeEntity('tnt', 700, 410, 3));
       haul(engine);
       expect(engine.state.entities[0].kind).toBe('gold-large');
-      expect(engine.state.score).toBe(863);
+      expect(engine.state.score).toBe(975);
     });
 
     it.each(['rock-small', 'rock-large', 'bone-small', 'bone-large', 'bag', 'mole', 'tnt'] as const)(
@@ -358,12 +358,12 @@ describe('the shared four-pick draft', () => {
 
 describe('time bank', () => {
   it.each([
-    ['solo', 60, 1200, 1850],
-    ['coop', 40, 800, 1450],
-    ['solo', 16.25, 340, 990],
-    ['coop', 16, 320, 970],
-    ['solo', 0.25, 20, 670],
-  ] as const)('pays displayed remaining %s seconds once at 20 coins per second', (mode, remaining, bonus, wallet) => {
+    ['solo', 60, 3000, 3650],
+    ['coop', 40, 2000, 2650],
+    ['solo', 16.25, 850, 1500],
+    ['coop', 16, 800, 1450],
+    ['solo', 0.25, 50, 700],
+  ] as const)('pays displayed remaining %s seconds once at 50 coins per second', (mode, remaining, bonus, wallet) => {
     const engine = start(['time-bank'], createRandom(71), mode);
     engine.tick(engine.state.duration - remaining);
     engine.state.score = engine.state.target;
@@ -423,8 +423,8 @@ describe('time bank', () => {
   });
 
   it.each([
-    ['solo', true, 1180],
-    ['coop', true, 780],
+    ['solo', true, 2950],
+    ['coop', true, 1950],
     ['solo', false, 0],
     ['coop', false, 0],
   ] as const)('pays an exhausted %s mine only when the round passed=%s', (mode, passed, expectedBonus) => {
@@ -449,9 +449,9 @@ describe('time bank', () => {
 });
 
 describe('mining ability effects', () => {
-  it('keeps Might as an extra 35% speed effect outside the original strength calculation', () => {
+  it('keeps Might as an extra 50% speed effect outside the original strength calculation', () => {
     expect(haulingMultiplier([])).toBe(1);
-    expect(haulingMultiplier(['might'])).toBe(1.35);
+    expect(haulingMultiplier(['might'])).toBe(1.5);
     const normal = mining('gold-large', []);
     const strong = mining('gold-large', ['might']);
     strong.state.activeUpgrades = ['strength'];
@@ -467,10 +467,10 @@ describe('mining ability effects', () => {
   });
 
   it.each([
-    ['gold-tiny', ['gold-collector'], false, 58],
-    ['gold-small', ['gold-collector'], false, 115],
-    ['gold-medium', ['gold-collector'], false, 288],
-    ['gold-large', ['gold-collector'], false, 575],
+    ['gold-tiny', ['gold-collector'], false, 65],
+    ['gold-small', ['gold-collector'], false, 130],
+    ['gold-medium', ['gold-collector'], false, 325],
+    ['gold-large', ['gold-collector'], false, 650],
     ['diamond', ['diamond-collector'], false, 690],
     ['diamond', ['diamond-collector'], true, 1035],
     ['mole-diamond', ['diamond-collector'], false, 692],
@@ -483,12 +483,12 @@ describe('mining ability effects', () => {
     expect(engine.state.score).toBe(expected);
   });
 
-  it.each(['gold-collector', 'diamond-collector'] as const)('describes the 15%% bonus for %s', (id) => {
-    expect(getAbility(id, 'solo').description).toContain('15%');
+  it.each([['gold-collector', '30%'], ['diamond-collector', '15%']] as const)('describes the %s bonus as %s', (id, bonus) => {
+    expect(getAbility(id, 'solo').description).toContain(bonus);
   });
 
   it('transmutes stone at contact, changes its picture/weight/value, and uses only the gold collector', () => {
-    const engine = mining('rock-small', ['alchemy', 'gold-collector', 'diamond-vein'], () => 0.1);
+    const engine = mining('rock-small', ['alchemy', 'gold-collector', 'diamond-collector'], () => 0.1);
     engine.state.activeUpgrades = ['rockbook'];
     engine.action(1, 'launch');
     advance(engine, 0.5);
@@ -499,8 +499,21 @@ describe('mining ability effects', () => {
     expect(cargo.value).toBe(500);
     expect(engine.state.score).toBe(0);
     advance(engine, 6);
-    expect(engine.state.score).toBe(575);
+    expect(engine.state.score).toBe(650);
     expect(engine.state.goldCollected).toBe(1);
+  });
+
+  it.each(['rock-small', 'rock-large'] as const)('uses a strict 40%% Alchemy chance for %s', (kind) => {
+    for (const [roll, expectedKind, expectedValue] of [
+      [0.399999, 'gold-large', 500],
+      [0.4, kind, makeEntity(kind, 0, 0, 0).value],
+    ] as const) {
+      const engine = mining(kind, ['alchemy'], () => roll);
+      haul(engine);
+      expect(engine.state.entities[0].kind).toBe(expectedKind);
+      expect(engine.state.entities[0].weight).toBe(makeEntity(expectedKind, 0, 0, 0).weight);
+      expect(engine.state.score).toBe(expectedValue);
+    }
   });
 
   it('does not retry a failed stone roll on subsequent reeling frames or aim queries', () => {
@@ -563,6 +576,96 @@ describe('mining ability effects', () => {
   });
 });
 
+describe('diamond vein', () => {
+  it.each(['gold-tiny', 'gold-small', 'gold-medium', 'gold-large'] as const)(
+    'rolls exactly once at capture with a strict 20%% chance for %s',
+    (kind) => {
+      for (const roll of [0.199999, 0.2]) {
+        let rolls = 0;
+        const engine = mining(kind, ['diamond-vein', 'gold-collector', 'diamond-collector'], () => {
+          rolls++;
+          return roll;
+        }, ['polish']);
+        rolls = 0;
+        for (let i = 0; i < 10; i++) {
+          findHookHit({ x: 600, y: 190 }, { x: 600, y: 690 }, engine.state.entities, DEFAULT_VIEWPORT, engine.state.abilities);
+        }
+        expect(rolls).toBe(0);
+        expect(engine.state.entities[0].kind).toBe(kind);
+        engine.action(1, 'launch');
+        engine.tick(0.5);
+        const converted = roll < 0.2;
+        const expected = makeEntity(converted ? 'diamond' : kind, 0, 0, 1);
+        expect(engine.state.entities[0]).toMatchObject({
+          kind: expected.kind, weight: expected.weight, radius: expected.radius, baseValue: expected.baseValue,
+          value: converted ? 900 : expected.value, claimedBy: 1,
+        });
+        expect(engine.state.score).toBe(0);
+        advance(engine, 8);
+        expect(engine.state.score).toBe(converted ? 1035 : Math.round(expected.value * 1.3));
+        expect(engine.state.goldCollected).toBe(converted ? 0 : 1);
+        expect(engine.state.diamondsCollected).toBe(converted ? 1 : 0);
+        expect(rolls).toBe(1);
+      }
+    },
+  );
+
+  it('can convert alchemized gold and applies polish and only the diamond collector', () => {
+    const engine = mining('rock-small', ['alchemy', 'diamond-vein', 'gold-collector', 'diamond-collector'], () => 0.1, ['rockbook', 'polish']);
+    engine.action(1, 'launch');
+    engine.tick(0.5);
+    expect(engine.state.entities[0]).toMatchObject({ kind: 'diamond', baseValue: 600, value: 900, weight: 2, radius: 18 });
+    advance(engine, 8);
+    expect(engine.state.score).toBe(1035);
+    expect(engine.state.goldCollected).toBe(0);
+    expect(engine.state.diamondsCollected).toBe(1);
+  });
+
+  it('can convert grown gold while keeping its capture-locked clone', () => {
+    const engine = mining('gold-tiny', ['diamond-vein', 'gold-growth', 'diamond-collector', 'clone'], () => 0.1, ['polish']);
+    engine.tick(5);
+    expect(engine.state.entities[0].kind).toBe('gold-small');
+    engine.state.players[0].angle = 0;
+    haul(engine);
+    expect(engine.state.entities[0]).toMatchObject({ kind: 'diamond', value: 900, weight: 2 });
+    expect(engine.state.clonedEntityId).toBe(1);
+    expect(engine.state.score).toBe(2070);
+  });
+
+  it('keeps capture-time risk and rush bonuses on a converted diamond', () => {
+    const engine = mining('gold-large', ['diamond-vein', 'diamond-collector', 'risk-reward', 'time-rush'], () => 0.1, ['polish']);
+    engine.state.entities.push(makeEntity('tnt', 700, 410, 3));
+    haul(engine);
+    expect(engine.state.entities[0]).toMatchObject({ kind: 'diamond', riskBonus: true, weight: 2 });
+    expect(engine.state.score).toBe(2174);
+  });
+
+  it.each(['rock-small', 'bone-small', 'bone-large', 'diamond', 'mole', 'mole-diamond', 'bag'] as const)(
+    'does not roll or convert non-gold %s',
+    (kind) => {
+      let rolls = 0;
+      const engine = mining(kind, ['diamond-vein'], () => { rolls++; return 0.1; });
+      engine.state.entities[0].speed = 0;
+      rolls = 0;
+      haul(engine);
+      expect(engine.state.entities[0].kind).toBe(kind);
+      expect(rolls).toBe(0);
+    },
+  );
+
+  it('converts both co-op catches independently', () => {
+    const engine = start(['diamond-vein'], () => 0.1, 'coop');
+    engine.state.entities = engine.state.players.map((player) => makeEntity('gold-large', player.origin.x, 500, player.id));
+    for (const player of engine.state.players) {
+      player.angle = 0;
+      engine.action(player.id, 'launch');
+    }
+    advance(engine, 8);
+    expect(engine.state.entities.every((entity) => entity.kind === 'diamond' && entity.weight === 2)).toBe(true);
+    expect(engine.state.players.map((player) => player.roundEarned)).toEqual([600, 600]);
+  });
+});
+
 describe('TNT fragments', () => {
   it.each([
     [[], 1],
@@ -618,13 +721,13 @@ describe('cloning', () => {
 
   it.each([
     ['mole-diamond', ['diamond-collector'], ['polish'], 2074],
-    ['gold-large', ['gold-collector', 'risk-reward'], [], 1726],
-    ['diamond', ['diamond-collector', 'risk-reward', 'time-rush'], ['polish'], 4036],
-    ['mole-diamond', ['diamond-collector', 'risk-reward', 'time-rush'], ['polish'], 4040],
+    ['gold-large', ['gold-collector', 'risk-reward'], [], 1950],
+    ['diamond', ['diamond-collector', 'risk-reward', 'time-rush'], ['polish'], 4348],
+    ['mole-diamond', ['diamond-collector', 'risk-reward', 'time-rush'], ['polish'], 4352],
     ['bone-small', ['archaeologist', 'time-rush'], ['rockbook', 'polish'], 280],
     ['bone-large', ['archaeologist', 'time-rush'], [], 800],
     ['rock-small', [], ['rockbook'], 66],
-    ['rock-small', ['alchemy', 'gold-collector', 'time-rush'], ['rockbook'], 1496],
+    ['rock-small', ['alchemy', 'gold-collector', 'time-rush'], ['rockbook'], 1820],
     ['mole', [], [], 4],
     ['tnt', ['bomb-expert', 'time-rush', 'gold-collector'], [], 100],
   ] as const)('doubles the complete final %s payout after all applicable bonuses', (kind, otherAbilities, upgrades, expectedValue) => {
@@ -793,6 +896,37 @@ describe('slow fuse', () => {
     expect(distant.active).toBe(true);
     expect(distant.fuseRemaining).toBeNull();
   });
+
+  it('protects caught cargo from delayed chain reactions without preventing manual dynamite', () => {
+    const engine = start(['slow-fuse', 'clone'], createRandom(71), 'coop');
+    const first = makeEntity('tnt', 600, 350, 1);
+    const chained = makeEntity('tnt', 800, 350, 2);
+    const cargo = makeEntity('gold-large', 840, 520, 3);
+    const loose = makeEntity('rock-small', 920, 450, 4);
+    engine.state.entities = [first, chained, cargo, loose, makeEntity('diamond', 70, 650, 5)];
+    const [trigger, carrier] = engine.state.players;
+    carrier.angle = 0;
+    engine.action(carrier.id, 'launch');
+    engine.tick(0.6);
+    expect(carrier.cargoId).toBe(cargo.id);
+    trigger.angle = Math.atan2(first.x - trigger.origin.x, first.y - trigger.origin.y);
+    engine.action(trigger.id, 'launch');
+    engine.tick(0.5);
+    expect(first.fuseRemaining).toBe(3);
+    advance(engine, 3);
+    expect(first.active).toBe(false);
+    expect(chained.active).toBe(false);
+    expect(loose.active).toBe(false);
+    expect(cargo.active).toBe(true);
+    expect(carrier.cargoId).toBe(cargo.id);
+    expect(engine.state.clonedEntityId).toBe(cargo.id);
+    engine.state.dynamite = 1;
+    engine.action(carrier.id, 'bomb');
+    expect(cargo.active).toBe(false);
+    expect(carrier.cargoId).toBeNull();
+    expect(engine.state.dynamite).toBe(0);
+    expect(engine.state.score).toBe(0);
+  });
 });
 
 describe('time rush', () => {
@@ -814,19 +948,19 @@ describe('time rush', () => {
   });
 
   it.each([
-    ['gold-tiny', [], [], 65],
-    ['gold-small', [], [], 130],
-    ['gold-medium', ['gold-collector'], [], 374],
-    ['gold-large', ['gold-collector', 'risk-reward'], [], 1121],
-    ['diamond', [], [], 780],
-    ['diamond', ['diamond-collector', 'risk-reward'], ['polish'], 2018],
-    ['mole-diamond', ['diamond-collector', 'risk-reward'], ['polish'], 2020],
+    ['gold-tiny', [], [], 70],
+    ['gold-small', [], [], 140],
+    ['gold-medium', ['gold-collector'], [], 455],
+    ['gold-large', ['gold-collector', 'risk-reward'], [], 1365],
+    ['diamond', [], [], 840],
+    ['diamond', ['diamond-collector', 'risk-reward'], ['polish'], 2174],
+    ['mole-diamond', ['diamond-collector', 'risk-reward'], ['polish'], 2176],
     ['rock-small', [], ['rockbook'], 33],
     ['bone-large', ['archaeologist'], ['rockbook'], 400],
     ['mole', [], [], 2],
     ['tnt', ['bomb-expert'], [], 50],
     ['bag', ['moneybags'], [], 135],
-  ] as const)('pays %s with the 30% treasure bonus, preserving other multipliers and exclusions', (kind, otherAbilities, upgrades, expectedValue) => {
+  ] as const)('pays %s with the 40% treasure bonus, preserving other multipliers and exclusions', (kind, otherAbilities, upgrades, expectedValue) => {
     const engine = mining(kind, ['time-rush', ...otherAbilities], () => 0.1, [...upgrades]);
     engine.state.entities[0].speed = 0;
     engine.state.entities.push(makeEntity('tnt', 700, 410, 3));
@@ -836,8 +970,8 @@ describe('time rush', () => {
   });
 
   it.each([
-    ['solo', 48, 3210],
-    ['coop', 32, 2810],
+    ['solo', 48, 5010],
+    ['coop', 32, 4010],
   ] as const)('keeps banked %s money without extending a newly selected rush timer', (mode, expectedDuration, expectedWallet) => {
     const engine = start(['time-bank'], createRandom(71), mode);
     engine.state.level = 2;
@@ -856,24 +990,26 @@ describe('time rush', () => {
 });
 
 describe('buzzer delivery', () => {
-  it('settles captured cargo at zero using normal bonuses before deciding whether the round passed', () => {
+  it('doubles captured cargo value at zero after other bonuses before deciding whether the round passed', () => {
     const engine = mining('diamond', ['buzzer-delivery', 'diamond-collector', 'clone', 'time-bank'], createRandom(72), ['polish']);
+    engine.state.target = 3000;
     engine.action(1, 'launch');
     engine.tick(0.4);
     expect(engine.state.players[0].cargoId).toBe(1);
     expect(engine.state.score).toBe(0);
     engine.state.timeLeft = 0.01;
     engine.tick(0.02);
-    expect(engine.state.score).toBe(2070);
+    expect(engine.state.score).toBe(4140);
     expect(engine.state.phase).toBe('results');
-    expect(engine.state.result).toMatchObject({ passed: true, earned: 2070, collected: 1, timeBankBonus: 0 });
+    expect(engine.state.result).toMatchObject({ passed: true, earned: 4140, collected: 1, timeBankBonus: 0 });
     expect(engine.state.players[0].cargoId).toBeNull();
     engine.tick(10);
-    expect(engine.state.score).toBe(2070);
+    expect(engine.state.score).toBe(4140);
   });
 
   it('settles both co-op hooks and their shared fossil bonus before the final pass decision', () => {
     const engine = start(['buzzer-delivery', 'fossil-puzzle', 'archaeologist'], createRandom(71), 'coop');
+    engine.state.target = 1400;
     engine.state.entities = [
       makeEntity('bone-small', 360, 500, 1),
       makeEntity('bone-large', 840, 500, 2),
@@ -886,9 +1022,9 @@ describe('buzzer delivery', () => {
     expect(engine.state.players.every((player) => player.cargoId !== null)).toBe(true);
     engine.state.timeLeft = 0.01;
     engine.tick(0.02);
-    expect(engine.state.result).toMatchObject({ passed: true, earned: 1040, collected: 2, fossilBonus: 500 });
+    expect(engine.state.result).toMatchObject({ passed: true, earned: 1580, collected: 2, fossilBonus: 500 });
     expect(engine.state.players.every((player) => player.cargoId === null)).toBe(true);
-    expect(engine.state.players.reduce((total, player) => total + player.roundEarned, 0)).toBe(1040);
+    expect(engine.state.players.reduce((total, player) => total + player.roundEarned, 0)).toBe(1580);
   });
 
   it.each(['unreached', 'destroyed', 'already-returned'] as const)('does not credit %s cargo at the buzzer', (status) => {
@@ -904,7 +1040,7 @@ describe('buzzer delivery', () => {
   });
 
   it.each([
-    ['moneybags', 0.5, 550, 1, false],
+    ['moneybags', 0.5, 1100, 1, false],
     ['might', 0.8, 0, 3, false],
     ['might', 0.55, 0, 1, true],
   ] as const)('preserves stored %s bag rewards at roll %s and cloning at timeout', (ability, roll, cash, dynamite, strength) => {
@@ -977,7 +1113,7 @@ describe('fossil puzzle', () => {
 });
 
 describe('gold growth', () => {
-  it('grows exactly one randomly selected nugget by one physical tier every ten seconds', () => {
+  it('grows exactly one randomly selected nugget by one physical tier every five seconds', () => {
     const engine = start(['gold-growth'], () => 0.5);
     engine.state.entities = [
       makeEntity('gold-tiny', 250, 350, 1),
@@ -985,15 +1121,15 @@ describe('gold growth', () => {
       makeEntity('gold-medium', 650, 500, 3),
       makeEntity('gold-large', 900, 600, 4),
     ];
-    engine.tick(9.75);
+    engine.tick(4.75);
     expect(engine.state.entities.map((entity) => entity.value)).toEqual([50, 100, 250, 500]);
     engine.tick(0.25);
     expect(engine.state.entities.map((entity) => entity.value)).toEqual([50, 250, 250, 500]);
     expect(engine.state.entities[1]).toMatchObject({ id: 2, x: 450, y: 400, kind: 'gold-medium', radius: 29, weight: 8, baseValue: 250 });
-    engine.tick(10);
+    engine.tick(5);
     expect(engine.state.entities.map((entity) => entity.value)).toEqual([50, 500, 250, 500]);
     expect(engine.state.entities[1]).toMatchObject({ radius: 44, weight: 9 });
-    engine.tick(10);
+    engine.tick(5);
     expect(engine.state.entities.map((entity) => entity.value)).toEqual([50, 500, 500, 500]);
   });
 
@@ -1009,29 +1145,29 @@ describe('gold growth', () => {
       makeEntity('gold-small', 450, 400, 2),
       makeEntity('gold-medium', 650, 500, 3),
     ];
-    engine.tick(10);
+    engine.tick(5);
     expect(engine.state.entities.map((entity) => entity.value)).toEqual(expected);
   });
 
   it('pauses growth, handles crossed intervals once each, and restarts the interval in the next mine', () => {
     const engine = mining('gold-tiny', ['gold-growth'], () => 0);
     engine.state.entities[1] = makeEntity('gold-large', 75, 650, 2);
-    engine.tick(9);
+    engine.tick(4);
     engine.pause();
     engine.tick(100);
     expect(engine.state.entities[0].value).toBe(50);
     engine.resume();
     engine.tick(1);
     expect(engine.state.entities[0].value).toBe(100);
-    engine.tick(20);
-    expect(engine.state.entities[0].value).toBe(500);
     engine.tick(10);
+    expect(engine.state.entities[0].value).toBe(500);
+    engine.tick(5);
     expect(engine.state.entities[0].value).toBe(500);
     openShop(engine);
     engine.tick(300);
     engine.nextLevel();
     engine.state.entities = [makeEntity('gold-tiny', 600, 390, 1)];
-    engine.tick(9);
+    engine.tick(4);
     expect(engine.state.entities[0].value).toBe(50);
     engine.tick(1);
     expect(engine.state.entities[0].value).toBe(100);
@@ -1047,7 +1183,7 @@ describe('gold growth', () => {
       destroyed,
       makeEntity('diamond', 900, 500, 4),
     ];
-    engine.tick(9.5);
+    engine.tick(4.5);
     engine.state.players[0].angle = 0;
     engine.action(1, 'launch');
     engine.tick(0.4);
@@ -1061,10 +1197,10 @@ describe('gold growth', () => {
   it('settles grown gold using its new tier before collector, risk, and clone bonuses', () => {
     const engine = mining('gold-tiny', ['gold-growth', 'gold-collector', 'risk-reward', 'clone'], () => 0);
     engine.state.entities.push(makeEntity('tnt', 700, 410, 3));
-    engine.tick(10);
+    engine.tick(5);
     engine.state.players[0].angle = 0;
     haul(engine);
-    expect(engine.state.score).toBe(346);
+    expect(engine.state.score).toBe(390);
   });
 });
 
@@ -1148,16 +1284,35 @@ describe('bag drops and generation', () => {
     expect(engine.state.bagStrength).toBe(false);
   });
 
-  it('uses a strict 10% generation conversion chance and adds one mole per shared mine', () => {
+  it('leaves gold unchanged at generation with Diamond Vein and adds one mole per shared mine', () => {
     for (const mode of ['solo', 'coop'] as const) {
-      const normal = createLevel(13, mode, { random: () => 0.1 });
-      const enhanced = createLevel(13, mode, { abilities: ['diamond-vein', 'diamond-moles'], random: () => 0.099 });
-      expect(enhanced.some((entity) => entity.kind.startsWith('gold'))).toBe(false);
+      const normal = createLevel(13, mode, { random: createRandom(72) });
+      const veined = createLevel(13, mode, { abilities: ['diamond-vein'], random: createRandom(72) });
+      expect(veined).toEqual(normal);
+      const enhanced = createLevel(13, mode, { abilities: ['diamond-vein', 'diamond-moles'], random: createRandom(72) });
+      expect(enhanced.filter((entity) => entity.kind.startsWith('gold')).length)
+        .toBe(normal.filter((entity) => entity.kind.startsWith('gold')).length);
       expect(enhanced.filter((entity) => entity.kind === 'mole-diamond').length).toBe(normal.filter((entity) => entity.kind === 'mole-diamond').length + 1);
       expect(enhanced.filter((entity) => entity.kind === 'diamond').every((entity) => entity.value === 600 && entity.weight === 2)).toBe(true);
-      const boundary = createLevel(13, mode, { abilities: ['diamond-vein'], random: () => 0.1 });
-      expect(boundary.filter((entity) => entity.kind.startsWith('gold')).length)
-        .toBe(normal.filter((entity) => entity.kind.startsWith('gold')).length);
+      expect(enhanced.filter((entity) => entity.kind === 'diamond').length)
+        .toBe(normal.filter((entity) => entity.kind === 'diamond').length);
+    }
+  });
+
+  it.each(['solo', 'coop'] as const)('adds one of each bone per bone ability to every %s mine', (mode) => {
+    const abilitySets: AbilityId[][] = [['archaeologist'], ['fossil-puzzle'], ['archaeologist', 'fossil-puzzle']];
+    for (const level of [1, 4, 7, 8, 9, 10, 13, 25, 1000, 1_000_000]) {
+      for (const roll of [0.1, 0.5, 0.99]) {
+        const normal = createLevel(level, mode, { random: () => roll });
+        for (const abilities of abilitySets) {
+          const enhanced = createLevel(level, mode, { abilities, random: () => roll });
+          for (const kind of ['bone-small', 'bone-large'] as const) {
+            expect(enhanced.filter((entity) => entity.kind === kind).length)
+              .toBe(normal.filter((entity) => entity.kind === kind).length + abilities.length);
+          }
+          expect(enhanced.length).toBe(normal.length + abilities.length * 2);
+        }
+      }
     }
   });
 

@@ -29,13 +29,22 @@ describe('bilingual game text', () => {
   });
 
   it('keeps the current balance and co-op details in the English descriptions', () => {
-    expect(getAbility('gold-collector', 'solo', 'en').description).toContain('15%');
+    expect(getAbility('gold-collector', 'solo', 'en').description).toContain('30%');
     expect(getAbility('diamond-collector', 'solo', 'en').detail).toContain('$1,035');
     expect(getAbility('risk-reward', 'solo', 'en').detail).toContain('75%');
     expect(getAbility('might', 'solo', 'en').detail).toContain('normal prizes');
-    expect(getAbility('time-bank', 'solo', 'en').detail).toContain('$1,200');
+    expect(getAbility('might', 'solo', 'en').description).toContain('50%');
+    expect(getAbility('alchemy', 'solo', 'en').description).toContain('40%');
+    expect(getAbility('diamond-vein', 'solo', 'en').description).toContain('20%');
+    expect(getAbility('diamond-vein', 'solo', 'en').detail).toContain('One roll at capture');
+    expect(getAbility('time-rush', 'solo', 'en').description).toContain('40%');
+    expect(getAbility('gold-growth', 'solo', 'en').description).toContain('5 seconds');
+    expect(getAbility('buzzer-delivery', 'solo', 'en').description).toContain('2x');
+    expect(getAbility('archaeologist', 'solo', 'en').detail).toContain('Adds one long bone and one skull');
+    expect(getAbility('fossil-puzzle', 'solo', 'en').detail).toContain('Adds one long bone and one skull');
+    expect(getAbility('time-bank', 'solo', 'en').detail).toContain('$3,000');
     expect(getAbility('time-bank', 'coop', 'en').detail).toContain('Shared in co-op.');
-    expect(getAbility('time-bank', 'coop', 'en').detail).toContain('$800');
+    expect(getAbility('time-bank', 'coop', 'en').detail).toContain('$2,000');
   });
 
   it('keeps all stage and shop copy bilingual, including endless resource categories', () => {

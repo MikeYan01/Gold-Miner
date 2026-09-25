@@ -163,13 +163,13 @@ describe('original physics in the running engine', () => {
     expect(both.state.players[0].length).toBe(fast.state.players[0].length);
   });
 
-  it('gives Might exactly 35% more reel work without changing source force or weight', () => {
+  it('gives Might exactly 50% more reel work without changing source force or weight', () => {
     const normal = reelingFixture('gold-large');
     const mighty = reelingFixture('gold-large', ['might']);
     normal.tick(20 / ORIGINAL_FRAME_RATE);
     mighty.tick(20 / ORIGINAL_FRAME_RATE);
     expect(normal.state.players[0].reel?.cursor).toBe(140);
-    expect(mighty.state.players[0].reel?.cursor).toBe(147);
+    expect(mighty.state.players[0].reel?.cursor).toBe(150);
     expect(mighty.state.entities[0].weight).toBe(9);
   });
 

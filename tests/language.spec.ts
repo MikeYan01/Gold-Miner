@@ -107,11 +107,11 @@ test('co-op results and bank bonuses switch without paying rewards a second time
   await page.getByRole('button', { name: 'Next stage', exact: true }).click();
   await page.getByRole('button', { name: 'Finish early', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Stage cleared', exact: true })).toBeVisible();
-  await expect(page.getByTestId('time-bank-bonus')).toHaveText('Time Bank +$800');
+  await expect(page.getByTestId('time-bank-bonus')).toHaveText('Time Bank +$2,000');
   await expect(page.getByLabel('Player 2 earnings this stage', { exact: true })).toBeVisible();
   const before = await readGame(page);
   await page.getByRole('button', { name: '切换到中文', exact: true }).click();
-  await expect(page.getByTestId('time-bank-bonus')).toHaveText('时间银行 +$800');
+  await expect(page.getByTestId('time-bank-bonus')).toHaveText('时间银行 +$2,000');
   expect(await readGame(page)).toEqual(before);
 });
 

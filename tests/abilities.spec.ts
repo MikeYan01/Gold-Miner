@@ -154,8 +154,8 @@ test('far-future shops retain normal prices, paid purchases, and free thefts', a
 });
 
 for (const [scenario, payout] of [
-  ['empowered-mine', '$50'], ['alchemy', '$575'], ['moneybags', '$600'],
-  ['risk-gold', '$863'], ['risk-gold-far', '$575'], ['risk-diamond', '$1,553'], ['risk-mole', '$1,555'],
+  ['empowered-mine', '$50'], ['alchemy', '$650'], ['diamond-vein', '$1,035'], ['moneybags', '$600'],
+  ['risk-gold', '$975'], ['risk-gold-far', '$650'], ['risk-diamond', '$1,553'], ['risk-mole', '$1,555'],
 ] as const) {
   test(`${scenario} changes actual browser mining and pays ${payout}`, async ({ page }, testInfo) => {
     await freeze(page, `/tests/abilities.html?scenario=${scenario}`);
@@ -167,6 +167,10 @@ for (const [scenario, payout] of [
     await page.getByRole('button', { name: '继续挖矿' }).click();
     await page.keyboard.press('ArrowDown');
     await page.clock.runFor(350);
+    if (scenario === 'diamond-vein') {
+      expect((await readGame(page)).entities.find((entity) => entity.id === 1))
+        .toMatchObject({ kind: 'diamond', weight: 2, radius: 18, value: 900, claimedBy: 1 });
+    }
     await page.screenshot({ path: testInfo.outputPath(`${scenario}.png`), animations: 'disabled' });
     await page.clock.runFor(4500);
     await expect(page.getByTestId('score')).toHaveText(payout);
@@ -193,14 +197,14 @@ test('risk reward has its own artwork, description, and selectable permanent car
 });
 
 for (const [mode, cap, baseDuration, wallet] of [
-  ['solo', 1200, 60, '$4,295'],
-  ['coop', 800, 40, '$3,895'],
+  ['solo', 3000, 60, '$6,095'],
+  ['coop', 2000, 40, '$5,095'],
 ] as const) {
   test(`time bank pays ${mode} early-finish cash without extending the next countdown`, async ({ page }, testInfo) => {
     if (mode === 'coop') await page.setViewportSize({ width: 390, height: 844 });
     await freeze(page, `/tests/abilities.html?scenario=draft-time-bank&mode=${mode}`);
     const card = page.getByRole('button', { name: '选择能力：时间银行', exact: true });
-    await expect(card).toContainText('提前过关时，每剩余1秒获得20元');
+    await expect(card).toContainText('提前过关时，每剩余1秒获得50元');
     await expect(card).not.toContainText('带到下一关');
     expect(await card.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
     const timeArt = await card.locator('canvas').evaluate((canvas) => {
@@ -237,19 +241,21 @@ for (const [mode, cap, baseDuration, wallet] of [
 }
 
 for (const [id, name, effect, detail, mode, duration] of [
-  ['gold-collector', '金块收藏家', '价值增加15%', '包括点石成金产生的黄金', 'solo', 60],
+  ['gold-collector', '金块收藏家', '价值增加30%', '包括点石成金产生的黄金', 'solo', 60],
   ['diamond-collector', '钻石收藏家', '价值增加15%', '乘算至1035元', 'solo', 60],
+  ['alchemy', '点石成金', '40%概率变成大金块', '也可继续触发璀璨胜金', 'solo', 60],
+  ['diamond-vein', '璀璨胜金', '抓到任意黄金时，20%概率变成钻石', '价值和重量同步变为钻石', 'solo', 60],
   ['airy-moles', '透气的鼹鼠', '更容易出现在矿场中上层', '不再改变移动速度或回拉重量', 'solo', 60],
   ['slow-fuse', '慢燃引信', '延迟3秒爆炸', '与拆弹专家互斥', 'solo', 60],
-  ['time-rush', '争分夺秒', '基础时间缩短20%，黄金和钻石价值增加30%', '不改变目标金币', 'solo', 48],
-  ['time-rush', '争分夺秒', '基础时间缩短20%，黄金和钻石价值增加30%', '不改变目标金币', 'coop', 32],
+  ['time-rush', '争分夺秒', '基础时间缩短20%，黄金和钻石价值增加40%', '不改变目标金币', 'solo', 48],
+  ['time-rush', '争分夺秒', '基础时间缩短20%，黄金和钻石价值增加40%', '不改变目标金币', 'coop', 32],
   ['regular-customer', '老主顾', '必有大力水、三叶草和钻石抛光剂', '限购1件', 'solo', 60],
-  ['archaeologist', '考古学家', '长骨价值变为140元，头骨价值变为400元', '重量保持不变', 'solo', 60],
+  ['archaeologist', '考古学家', '长骨140元、头骨400元，每关额外出现各1件', '重量保持不变', 'solo', 60],
   ['clone', '克隆', '最终收益翻倍', '全队共享1次', 'solo', 60],
   ['fossil-puzzle', '化石拼图', '额外获得500元', '全队共享每关1次', 'solo', 60],
-  ['gold-growth', '黄金生长', '每10秒，随机一颗黄金长大一档', '每次仅1颗', 'solo', 60],
-  ['gold-growth', '黄金生长', '每10秒，随机一颗黄金长大一档', '每次仅1颗', 'coop', 40],
-  ['buzzer-delivery', '压哨交货', '钩上已抓住的物品照常结算', '结算后再判断过关', 'solo', 60],
+  ['gold-growth', '黄金生长', '每5秒，随机一颗黄金长大一档', '每次仅1颗', 'solo', 60],
+  ['gold-growth', '黄金生长', '每5秒，随机一颗黄金长大一档', '每次仅1颗', 'coop', 40],
+  ['buzzer-delivery', '压哨交货', '钩上货物直接结算，金币价值乘2', '结算后再判断过关', 'solo', 60],
 ] as const) {
   test(`${id} has its own selectable artwork and complete ${mode} descriptions`, async ({ page }, testInfo) => {
     if (mode === 'coop' || id === 'airy-moles' || id === 'archaeologist') {
@@ -275,6 +281,11 @@ for (const [id, name, effect, detail, mode, duration] of [
     await page.getByRole('button', { name: '下一关', exact: true }).click();
     await expect(page.getByTestId('timer')).toHaveText(String(duration));
     await expect(page.locator(`[data-owned-ability="${id}"]`)).toHaveCount(1);
+    if (id === 'archaeologist' || id === 'fossil-puzzle') {
+      const entities = (await readGame(page)).entities;
+      expect(entities.filter((entity) => entity.kind === 'bone-small')).toHaveLength(1);
+      expect(entities.filter((entity) => entity.kind === 'bone-large')).toHaveLength(1);
+    }
     if (id === 'airy-moles') {
       const moles = (await readGame(page)).entities.filter((entity) => entity.kind.startsWith('mole'));
       expect(moles.filter((entity) => entity.kind === 'mole').length).toBeGreaterThan(0);
@@ -304,10 +315,10 @@ test('fossil puzzle pays a shared $500 completion bonus on top of both archaeolo
 });
 
 for (const mode of ['solo', 'coop'] as const) {
-  test(`gold growth changes only one real ${mode} nugget each ten seconds and pauses with the mine`, async ({ page }, testInfo) => {
+  test(`gold growth changes only one real ${mode} nugget each five seconds and pauses with the mine`, async ({ page }, testInfo) => {
     await freeze(page, `/tests/abilities.html?scenario=gold-growth&mode=${mode}`);
     await page.getByRole('button', { name: '继续挖矿' }).click();
-    await page.clock.runFor(9950);
+    await page.clock.runFor(4950);
     expect((await readGame(page)).entities.map((entity) => entity.value)).toEqual([50, 100, 250, 500]);
     await page.clock.runFor(100);
     expect((await readGame(page)).entities.map((entity) => entity.value)).toEqual([50, 250, 250, 500]);
@@ -316,7 +327,7 @@ for (const mode of ['solo', 'coop'] as const) {
     await page.clock.fastForward(20_000);
     expect((await readGame(page)).entities.map((entity) => entity.value)).toEqual([50, 250, 250, 500]);
     await page.getByRole('button', { name: '继续挖矿' }).click();
-    await page.clock.runFor(10_000);
+    await page.clock.runFor(5000);
     expect((await readGame(page)).entities.map((entity) => entity.value)).toEqual([50, 500, 250, 500]);
   });
 }
@@ -328,7 +339,7 @@ test('buzzer delivery credits a heavy cloned nugget still on the hook at zero', 
   await expect(page.getByTestId('score')).toHaveText('$0');
   await page.clock.runFor(1000);
   await expect(page.getByTestId('timer')).toHaveText('00');
-  await expect(page.getByTestId('score')).toHaveText('$1,150');
+  await expect(page.getByTestId('score')).toHaveText('$2,600');
   await expect(page.getByRole('region', { name: '过关', exact: true })).toBeVisible();
   await expect(page.getByTestId('time-bank-bonus')).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('buzzer-delivery-result.png'), animations: 'disabled' });
@@ -561,7 +572,7 @@ test('touch users can tap an owned icon and dismiss its custom tooltip by tappin
     await page.getByRole('button', { name: '继续挖矿' }).tap();
     await page.getByRole('button', { name: '查看能力：大力', exact: true }).tap();
     await expect(page.getByRole('tooltip').locator('strong')).toHaveText('大力');
-    await expect(page.getByRole('tooltip')).toContainText('35%');
+    await expect(page.getByRole('tooltip')).toContainText('50%');
     await page.locator('.mine-canvas').tap({ position: { x: 300, y: 500 } });
     await expect(page.getByRole('tooltip')).toHaveCount(0);
   } finally {

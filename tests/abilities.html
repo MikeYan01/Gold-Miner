@@ -24,7 +24,7 @@
       const draftScenario = ['draft-four', 'draft-risk', 'draft-clean', 'draft-time-bank', 'draft-new'].includes(scenario);
       const shopScenario = draftScenario || ['thief-shop', 'late-shop'].includes(scenario);
       const scarceShop = scenario === 'empty-shop' || scenario === 'regular-shop';
-      const random = scenario === 'draft-run' ? () => 0.2 : scenario === 'alchemy' || shopScenario ? () => 0.1 : scenario === 'moneybags' || scenario === 'gold-growth' ? () => 0.5 : scenario === 'bag-strength' ? () => 0.55 : scarceShop ? () => 0.99 : createRandom(30);
+      const random = scenario === 'draft-run' ? () => 0.2 : ['alchemy', 'diamond-vein'].includes(scenario) || shopScenario ? () => 0.1 : scenario === 'moneybags' || scenario === 'gold-growth' ? () => 0.5 : scenario === 'bag-strength' ? () => 0.55 : scarceShop ? () => 0.99 : createRandom(30);
       const engine = new GameEngine(random);
       engine.start(mode);
       engine.state.abilityOffers = ['aim-line', 'might', 'thief'];
@@ -54,7 +54,7 @@
             : [scenario === 'draft-risk' ? 'risk-reward' : 'thief', 'might', 'moneybags'];
         if (scenario === 'draft-new') {
           const ability = params.get('ability');
-          if (!['gold-collector', 'diamond-collector', 'airy-moles', 'slow-fuse', 'time-rush', 'regular-customer', 'archaeologist', 'clone', 'fossil-puzzle', 'gold-growth', 'buzzer-delivery'].includes(ability)) {
+          if (!['gold-collector', 'diamond-collector', 'alchemy', 'diamond-vein', 'airy-moles', 'slow-fuse', 'time-rush', 'regular-customer', 'archaeologist', 'clone', 'fossil-puzzle', 'gold-growth', 'buzzer-delivery'].includes(ability)) {
             throw new Error('Invalid new-ability fixture choice.');
           }
           engine.state.abilityOffers = [ability, 'thief', 'might'];
@@ -170,17 +170,19 @@
         engine.state.players[0].angle = 0;
         engine.state.players[0].swingTime = 0;
         engine.pause();
-      } else if (['empowered-mine', 'alchemy', 'moneybags'].includes(scenario)) {
+      } else if (['empowered-mine', 'alchemy', 'diamond-vein', 'moneybags'].includes(scenario)) {
         engine.state.abilities = scenario === 'alchemy'
           ? ['alchemy', 'gold-collector', 'aim-line', 'might']
-          : scenario === 'moneybags'
-            ? ['moneybags', 'might', 'gold-collector', 'aim-line']
-            : ['bomb-expert', 'wide-claw', 'aim-line', 'might'];
+          : scenario === 'diamond-vein'
+            ? ['diamond-vein', 'diamond-collector', 'aim-line', 'might']
+            : scenario === 'moneybags'
+              ? ['moneybags', 'might', 'gold-collector', 'aim-line']
+              : ['bomb-expert', 'wide-claw', 'aim-line', 'might'];
         engine.state.level = 12;
         engine.state.phase = 'shop';
-        engine.state.pendingUpgrades = [scenario === 'alchemy' ? 'rockbook' : scenario === 'moneybags' ? 'luck' : 'strength'];
+        engine.state.pendingUpgrades = [scenario === 'alchemy' ? 'rockbook' : scenario === 'moneybags' ? 'luck' : scenario === 'diamond-vein' ? 'polish' : 'strength'];
         engine.nextLevel();
-        const kind = scenario === 'alchemy' ? 'rock-small' : scenario === 'moneybags' ? 'bag' : 'tnt';
+        const kind = scenario === 'alchemy' ? 'rock-small' : scenario === 'moneybags' ? 'bag' : scenario === 'diamond-vein' ? 'gold-large' : 'tnt';
         const target = makeEntity(kind, 600, 340, 1);
         applyRoundValue(target, engine.state.activeUpgrades);
         if (kind === 'bag') {

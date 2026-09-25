@@ -1,6 +1,6 @@
 import type { AbilityId, Entity, EntityKind, Mode, Point, ShopItem, ShopItemId, Upgrade } from './types';
 import { createRandom, shuffled } from './random';
-import { DIAMOND_VEIN_CHANCE, rollBagCount } from './abilities';
+import { rollBagCount } from './abilities';
 import { MATERIAL_WEIGHTS, rollOriginalBagWeight } from './hauling';
 import {
   originalCategory, originalRoundValue,
@@ -145,19 +145,20 @@ export function createLevel(level: number, mode: Mode, options: LevelOptions = {
   const bagCount = rollBagCount(abilities, random);
   for (let count = 0; count < bagCount; count++) kinds.push('bag');
   if (abilities.includes('diamond-moles')) kinds.push('mole-diamond');
+  for (const ability of ['archaeologist', 'fossil-puzzle'] as const) {
+    if (abilities.includes(ability)) kinds.push('bone-small', 'bone-large');
+  }
 
   const entities = kinds.map((kind, id) => {
-    const actualKind = kind.startsWith('gold') && abilities.includes('diamond-vein') && random() < DIAMOND_VEIN_CHANCE
-      ? 'diamond' : kind;
-    const entity = makeEntity(actualKind, 0, 0, id);
-    if (actualKind === 'tnt' && abilities.includes('bomb-expert')) disarmTnt(entity);
+    const entity = makeEntity(kind, 0, 0, id);
+    if (kind === 'tnt' && abilities.includes('bomb-expert')) disarmTnt(entity);
     applyRoundValue(entity, options.upgrades ?? []);
-    if (actualKind === 'bag') {
+    if (kind === 'bag') {
       initialiseBag(entity, {
         abilities, lucky: options.upgrades?.includes('luck') ?? false, dynamite: options.dynamite ?? 0,
       }, random);
     }
-    if (actualKind.startsWith('mole')) {
+    if (kind.startsWith('mole')) {
       entity.speed *= 1 + Math.min(0.75, Math.max(0, level - 13) * 0.02);
     }
     return entity;

@@ -407,23 +407,29 @@ describe('dynamite, hazards, and loot', () => {
     expect(engine.state.notice?.text['zh-CN']).toContain('TNT');
   });
 
-  it('clears the other player’s cargo if it is inside a TNT blast', () => {
+  it.each([1, 2] as const)('protects hauled teammate cargo on player %i hook from a TNT blast', (carrierId) => {
     const engine = fixture('tnt', 'coop');
-    const tnt = makeEntity('tnt', 600, 370, 1);
-    const cargo = makeEntity('gold-large', 650, 400, 2);
+    const carrier = engine.state.players[carrierId - 1];
+    const trigger = engine.state.players[2 - carrierId];
+    const tnt = makeEntity('tnt', 600, 350, 1);
+    const cargo = makeEntity('gold-large', carrier.origin.x, 670, 2);
     engine.state.entities = [tnt, cargo, makeEntity('diamond', 70, 650, 3)];
-    const second = engine.state.players[1];
-    cargo.claimedBy = 2;
-    second.phase = 'retracting';
-    second.cargoId = cargo.id;
-    second.length = 310;
-    engine.state.players[0].angle = Math.atan2(tnt.x - 360, tnt.y - 143);
-    engine.action(1, 'launch');
-    engine.tick(0.6);
-    expect(tnt).toMatchObject({ kind: 'tnt-fragment', active: true, claimedBy: 1 });
-    expect(cargo.active).toBe(false);
-    expect(second.cargoId).toBeNull();
-    expect(engine.state.score).toBe(0);
+    carrier.angle = 0;
+    acquire(engine, carrier);
+    for (let i = 0; i < 600 && hookTip(carrier).y > 440; i++) engine.tick(1 / 60);
+    expect(carrier.cargoId).toBe(cargo.id);
+    expect(hookTip(carrier).y).toBeLessThanOrEqual(440);
+
+    trigger.angle = Math.atan2(tnt.x - trigger.origin.x, tnt.y - trigger.origin.y);
+    engine.action(trigger.id, 'launch');
+    advance(engine, 0.6);
+
+    expect(tnt.kind).toBe('tnt-fragment');
+    expect(cargo.active).toBe(true);
+    expect(carrier.cargoId).toBe(cargo.id);
+    expect(engine.state.score).toBeLessThan(cargo.value);
+    advance(engine, 10);
+    expect(carrier.roundEarned).toBe(500);
   });
 
   it.each([

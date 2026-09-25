@@ -22,27 +22,29 @@ export const MAX_ABILITIES = 4;
 export const ABILITY_LEVELS: readonly number[] = [1, 4, 7, 10];
 export const BASE_HOOK_RADIUS = 7;
 export const WIDE_CLAW_MULTIPLIER = 2;
-export const GOLD_COLLECTOR_BONUS_PERCENT = 15;
+export const GOLD_COLLECTOR_BONUS_PERCENT = 30;
 export const DIAMOND_COLLECTOR_BONUS_PERCENT = 15;
-export const DIAMOND_VEIN_CHANCE = 0.1;
+export const ALCHEMY_CHANCE = 0.4;
+export const DIAMOND_VEIN_CHANCE = 0.2;
 export const RISK_VALUE_MULTIPLIER = 1.5;
 export const RISK_RADIUS_MULTIPLIER = 0.75;
-export const TIME_BANK_COINS_PER_SECOND = 20;
+export const TIME_BANK_COINS_PER_SECOND = 50;
 export const ARCHAEOLOGIST_VALUE_MULTIPLIER = 20;
 export const RUSH_DURATION_MULTIPLIER = 0.8;
-export const RUSH_VALUE_MULTIPLIER = 1.3;
+export const RUSH_VALUE_MULTIPLIER = 1.4;
 export const SLOW_FUSE_SECONDS = 3;
 export const CLONE_REWARD_MULTIPLIER = 2;
 export const FOSSIL_PUZZLE_BONUS = 500;
-export const GOLD_GROWTH_INTERVAL = 10;
+export const GOLD_GROWTH_INTERVAL = 5;
+export const BUZZER_DELIVERY_VALUE_MULTIPLIER = 2;
 export const BAG_COUNTS = [0.15, 0.45, 0.25, 0.12, 0.03] as const;
 export const MONEYBAGS_COUNTS = [0.05, 0.32, 0.4, 0.18, 0.05] as const;
 
 export const ABILITIES: readonly AbilityDefinition[] = [
   {
     id: 'might', name: bilingual('大力', 'Might'),
-    description: bilingual('载物回拉速度增加35%', 'Loaded hauling speed +35%'),
-    detail: bilingual('在原版回拉效果上额外加速35%，不改变力量值；钱袋使用普通奖池，仍可抽到本关生力。', 'Adds 35% speed after the original hauling mode is chosen, without changing strength. Bags keep their normal prizes, including stage-long fast hauling.'),
+    description: bilingual(`载物回拉速度增加${Math.round((MIGHT_SPEED_MULTIPLIER - 1) * 100)}%`, `Loaded hauling speed +${Math.round((MIGHT_SPEED_MULTIPLIER - 1) * 100)}%`),
+    detail: bilingual('在原版回拉效果上额外加速50%，不改变力量值；钱袋使用普通奖池，仍可抽到本关生力。', 'Adds 50% speed after the original hauling mode is chosen, without changing strength. Bags keep their normal prizes, including stage-long fast hauling.'),
   },
   {
     id: 'gold-collector', name: bilingual('金块收藏家', 'Gold Collector'),
@@ -56,8 +58,8 @@ export const ABILITIES: readonly AbilityDefinition[] = [
   },
   {
     id: 'alchemy', name: bilingual('点石成金', 'Alchemy'),
-    description: bilingual('抓到石头时，20%概率变成大金块', 'Caught rocks have a 20% chance to become large gold'),
-    detail: bilingual('每块石头只判定一次；成功后价值500、重量按大金块计算，可叠加金块收藏家。', 'One roll per rock. Success gives a $500 nugget with large-gold weight. Stacks with Gold Collector.'),
+    description: bilingual(`抓到石头时，${ALCHEMY_CHANCE * 100}%概率变成大金块`, `Caught rocks have a ${ALCHEMY_CHANCE * 100}% chance to become large gold`),
+    detail: bilingual('每块石头只判定一次；成功后价值500、重量按大金块计算，可叠加金块收藏家，也可继续触发璀璨胜金。', 'One roll per rock. Success gives a $500 nugget with large-gold weight. Stacks with Gold Collector and can then trigger Diamond Vein.'),
   },
   {
     id: 'aim-line', name: bilingual('射线', 'Aim Line'),
@@ -71,8 +73,8 @@ export const ABILITIES: readonly AbilityDefinition[] = [
   },
   {
     id: 'diamond-vein', name: bilingual('璀璨胜金', 'Diamond Vein'),
-    description: bilingual('每块黄金有10%概率变成钻石', 'Each gold nugget has a 10% chance to become a diamond'),
-    detail: bilingual('在每关生成矿场时生效；不再次转换采集中点石成金的产物。', 'Rolls when each mine is generated. Does not convert gold created by Alchemy during play.'),
+    description: bilingual(`抓到任意黄金时，${DIAMOND_VEIN_CHANCE * 100}%概率变成钻石`, `Caught gold has a ${DIAMOND_VEIN_CHANCE * 100}% chance to become a diamond`),
+    detail: bilingual('抓取时只判定一次，包括点石成金和黄金生长的产物；外观、价值和重量同步变为钻石，可叠加抛光剂与钻石收藏家，不再在矿场生成时转换。', 'One roll at capture, including gold from Alchemy and Gold Growth. Appearance, value, and weight become a diamond, with polish and Diamond Collector support. No conversion at mine generation.'),
   },
   {
     id: 'bomb-expert', name: bilingual('拆弹专家', 'Bomb Expert'),
@@ -116,7 +118,7 @@ export const ABILITIES: readonly AbilityDefinition[] = [
   },
   {
     id: 'time-rush', name: bilingual('争分夺秒', 'Time Rush'),
-    description: bilingual('每关基础时间缩短20%，黄金和钻石价值增加30%', '20% less base time; gold and diamonds worth 30% more'),
+    description: bilingual(`每关基础时间缩短20%，黄金和钻石价值增加${Math.round((RUSH_VALUE_MULTIPLIER - 1) * 100)}%`, `20% less base time; gold and diamonds worth ${Math.round((RUSH_VALUE_MULTIPLIER - 1) * 100)}% more`),
     detail: bilingual('不改变目标金币；收益可与收藏家、抛光剂及富贵险中求乘算，不加成鼹鼠本身的2元。', 'Goals stay unchanged. Multiplies with collectors, polish, and Risk Reward, but not the mole body value of $2.'),
   },
   {
@@ -126,8 +128,8 @@ export const ABILITIES: readonly AbilityDefinition[] = [
   },
   {
     id: 'archaeologist', name: bilingual('考古学家', 'Archaeologist'),
-    description: bilingual('长骨价值变为140元，头骨价值变为400元', 'Long bones pay $140; skulls pay $400'),
-    detail: bilingual('重量保持不变；骨头仍不属于石头、黄金或钻石，不受石头书、收藏家或富贵险中求加成。', 'Weights stay unchanged. Bones are not rocks, gold, or diamonds, so the rock book, collectors, and Risk Reward do not apply.'),
+    description: bilingual('长骨140元、头骨400元，每关额外出现各1件', 'Long bones pay $140; skulls $400; one extra of each per stage'),
+    detail: bilingual('每关全队额外生成1根长骨和1颗头骨，可与化石拼图叠加。重量保持不变；骨头不受石头书、收藏家或富贵险中求加成。', 'Adds one long bone and one skull per shared mine, stacking with Fossil Puzzle. Weights stay unchanged. The rock book, collectors, and Risk Reward do not boost bones.'),
   },
   {
     id: 'clone', name: bilingual('克隆', 'Clone'),
@@ -137,17 +139,17 @@ export const ABILITIES: readonly AbilityDefinition[] = [
   {
     id: 'fossil-puzzle', name: bilingual('化石拼图', 'Fossil Puzzle'),
     description: bilingual('每关集齐长骨和头骨，额外获得500元', 'Collect a long bone and a skull for an extra $500'),
-    detail: bilingual('两种骨头各收回1件即可，顺序不限，全队共享每关1次；骨头本身正常结算，拼图奖金不受克隆等售价加成。', 'Collect both types in either order, once per shared stage. Bones also pay their normal value. Clone and other value bonuses do not multiply the $500 reward.'),
+    detail: bilingual('每关全队额外生成1根长骨和1颗头骨，可与考古学家叠加。两种各收回1件即可，顺序不限，全队共享每关1次；骨头正常结算，拼图奖金不受克隆或压哨交货等售价加成。', 'Adds one long bone and one skull per shared mine, stacking with Archaeologist. Collect both types in either order, once per shared stage. Bones pay normally; Clone, Buzzer Delivery, and other value bonuses do not multiply the $500 reward.'),
   },
   {
     id: 'gold-growth', name: bilingual('黄金生长', 'Gold Growth'),
-    description: bilingual('每10秒，随机一颗黄金长大一档', 'One random nugget grows a tier every 10 seconds'),
+    description: bilingual(`每${GOLD_GROWTH_INTERVAL}秒，随机一颗黄金长大一档`, `One random nugget grows a tier every ${GOLD_GROWTH_INTERVAL} seconds`),
     detail: bilingual('每次仅1颗：50→100→250→500元；从地下未抓住且未满档的黄金中等概率抽选，同一颗可多次长大，体积和重量同步增长；暂停不计时。', 'One nugget at a time: $50 to $100 to $250 to $500. Uniformly picks unclaimed, underground gold below the top tier. The same nugget can grow again, including size and weight. Paused time does not count.'),
   },
   {
     id: 'buzzer-delivery', name: bilingual('压哨交货', 'Buzzer Delivery'),
-    description: bilingual('时间归零时，钩上已抓住的物品照常结算', 'Cargo already caught pays out when time runs out'),
-    detail: bilingual('无需先拉回地面，双人两只钩均有效；保留全部收益加成和钱袋奖励，空钩或已炸毁的货物不算，结算后再判断过关。', 'Applies to both co-op claws without returning to the surface. Keeps value bonuses and bag rewards. Empty hooks and destroyed cargo earn nothing. Pass or fail is decided after payout.'),
+    description: bilingual(`时间归零时，钩上货物直接结算，金币价值乘${BUZZER_DELIVERY_VALUE_MULTIPLIER}`, `Cargo still caught at timeout pays ${BUZZER_DELIVERY_VALUE_MULTIPLIER}x its coin value`),
+    detail: bilingual('双人两只钩均有效，可与克隆叠加；钱袋现金翻倍，炸药、生力和拼图奖金不额外翻倍。空钩或已炸毁货物不算，结算后再判断过关。', 'Applies to both co-op claws and stacks with Clone. Doubles cash, not dynamite, fast hauling, or the Fossil Puzzle bonus. Empty hooks and destroyed cargo earn nothing. Pass or fail is decided after payout.'),
   },
 ];
 
