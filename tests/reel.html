@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <title>Reel presentation fixture</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import { createElement } from 'react';
+      import { createRoot } from 'react-dom/client';
+      import App from '/src/App.tsx';
+      import { GameEngine } from '/src/game/engine.ts';
+      import { makeEntity, REST_LENGTH } from '/src/game/levels.ts';
+      import { createRandom } from '/src/game/random.ts';
+
+      const params = new URL(location.href).searchParams;
+      const kind = params.get('kind') ?? 'gold-large';
+      const mode = params.get('mode') ?? 'solo';
+      const observedId = Number(params.get('player') ?? 1);
+      if (!['empty', 'gold-large', 'diamond', 'fast-gold', 'mighty-gold'].includes(kind)) throw new Error('Invalid reel fixture kind.');
+      if (mode !== 'solo' && mode !== 'coop') throw new Error('Invalid reel fixture mode.');
+      const engine = new GameEngine(createRandom(47));
+      engine.start(mode);
+      engine.state.abilityOffers = ['aim-line', 'might', 'thief'];
+      engine.chooseAbility('aim-line');
+      engine.state.abilities = kind === 'mighty-gold' ? ['might'] : [];
+      engine.state.bagStrength = kind === 'fast-gold';
+      engine.state.dynamite = 1;
+      engine.state.entities = [];
+      for (const player of engine.state.players) {
+        player.angle = 0;
+        player.length = REST_LENGTH + 400;
+        player.phase = 'retracting';
+        player.reel = null;
+        if (kind !== 'empty') {
+          const cargo = makeEntity(kind === 'diamond' ? 'diamond' : 'gold-large', player.origin.x, 550, player.id);
+          cargo.claimedBy = player.id;
+          player.cargoId = cargo.id;
+          engine.state.entities.push(cargo);
+        }
+      }
+      engine.state.entities.push(makeEntity('gold-tiny', 80, 650, 3));
+      engine.pause();
+      window.getMiningState = () => structuredClone(engine.state);
+
+      const frames = [];
+      let ropeIndex = 0;
+      let awaitingCargo = false;
+      let currentFrame = null;
+      const clearRect = CanvasRenderingContext2D.prototype.clearRect;
+      const lineTo = CanvasRenderingContext2D.prototype.lineTo;
+      const translate = CanvasRenderingContext2D.prototype.translate;
+      CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+        if (this.canvas.classList.contains('mine-canvas')) {
+          ropeIndex = 0;
+          awaitingCargo = observedId === 1 && engine.state.players[0].cargoId !== null;
+          currentFrame = null;
+        }
+        return clearRect.apply(this, args);
+      };
+      CanvasRenderingContext2D.prototype.lineTo = function (x, y) {
+        if (ropeIndex < engine.state.players.length && this.canvas.classList.contains('mine-canvas')) {
+          const player = engine.state.players[ropeIndex++];
+          if (engine.state.phase === 'playing' && player.phase === 'retracting' && player.id === observedId) {
+            const transform = this.getTransform();
+            currentFrame = {
+              time: performance.now(),
+              x: transform.a * x + transform.c * y + transform.e,
+              y: transform.b * x + transform.d * y + transform.f,
+            };
+            frames.push(currentFrame);
+          }
+        }
+        return lineTo.call(this, x, y);
+      };
+      CanvasRenderingContext2D.prototype.translate = function (x, y) {
+        if (awaitingCargo && currentFrame && this.canvas.classList.contains('mine-canvas')) {
+          awaitingCargo = false;
+          const transform = this.getTransform();
+          currentFrame.cargo = {
+            x: transform.a * x + transform.c * y + transform.e,
+            y: transform.b * x + transform.d * y + transform.f,
+          };
+        }
+        return translate.call(this, x, y);
+      };
+      window.getReelPaint = () => structuredClone(frames);
+      createRoot(document.getElementById('root')).render(createElement(App, { engine }));
+    </script>
+  </body>
+</html>

@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <title>Ability interaction fixture</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import { createElement } from 'react';
+      import { createRoot } from 'react-dom/client';
+      import App from '/src/App.tsx';
+      import { GameEngine } from '/src/game/engine.ts';
+      import { applyRoundValue, getLevelInfo, initialiseBag, makeEntity } from '/src/game/levels.ts';
+      import { createRandom } from '/src/game/random.ts';
+
+      const params = new URL(location.href).searchParams;
+      const scenario = params.get('scenario') ?? 'draft-four';
+      const mode = params.get('mode') ?? 'solo';
+      if (mode !== 'solo' && mode !== 'coop') throw new Error('Invalid fixture mode.');
+      const draftScenario = ['draft-four', 'draft-risk', 'draft-clean', 'draft-time-bank', 'draft-new'].includes(scenario);
+      const shopScenario = draftScenario || ['thief-shop', 'late-shop'].includes(scenario);
+      const scarceShop = scenario === 'empty-shop' || scenario === 'regular-shop';
+      const random = scenario === 'draft-run' ? () => 0.2 : scenario === 'alchemy' || shopScenario ? () => 0.1 : scenario === 'moneybags' || scenario === 'gold-growth' ? () => 0.5 : scenario === 'bag-strength' ? () => 0.55 : scarceShop ? () => 0.99 : createRandom(30);
+      const engine = new GameEngine(random);
+      engine.start(mode);
+      engine.state.abilityOffers = ['aim-line', 'might', 'thief'];
+      engine.chooseAbility('aim-line');
+      engine.state.dynamite = 1;
+      window.getMiningState = () => structuredClone(engine.state);
+
+      if (scenario === 'draft-run') {
+        engine.start(mode);
+        engine.state.score = 1_000_000;
+      } else if (draftScenario) {
+        engine.state.level = 2;
+        engine.state.phase = 'shop';
+        engine.nextLevel();
+        engine.state.score = scenario === 'draft-time-bank' ? getLevelInfo(4, mode).target : engine.state.target;
+        engine.finishEarly();
+        engine.openShop();
+        engine.state.abilityOffers = scenario === 'draft-time-bank'
+          ? ['time-bank', 'thief', 'might']
+          : scenario === 'draft-clean'
+            ? ['bomb-expert', 'wide-claw', 'risk-reward']
+            : [scenario === 'draft-risk' ? 'risk-reward' : 'thief', 'might', 'moneybags'];
+        if (scenario === 'draft-new') {
+          const ability = params.get('ability');
+          if (!['gold-collector', 'diamond-collector', 'airy-moles', 'slow-fuse', 'time-rush', 'regular-customer', 'archaeologist', 'clone', 'fossil-puzzle', 'gold-growth', 'buzzer-delivery'].includes(ability)) {
+            throw new Error('Invalid new-ability fixture choice.');
+          }
+          engine.state.abilityOffers = [ability, 'thief', 'might'];
+          if (ability === 'airy-moles') engine.state.abilities = ['diamond-moles'];
+        }
+      } else if (scenario === 'thief-shop' || scenario === 'late-shop' || scarceShop) {
+        engine.state.abilities = scenario === 'regular-shop' ? ['regular-customer', 'thief'] : ['thief'];
+        if (scarceShop) engine.state.dynamite = 5;
+        if (scenario === 'late-shop') {
+          engine.state.level = 999_999;
+          engine.state.target = getLevelInfo(999_999, mode).target;
+        }
+        engine.state.score = engine.state.target;
+        engine.finishEarly();
+        engine.openShop();
+        engine.state.score = scenario === 'late-shop' ? 1000 : 0;
+      } else if (['risk-gold', 'risk-gold-far', 'risk-diamond', 'risk-mole', 'loot-art', 'archaeology', 'clone-diamond'].includes(scenario)) {
+        const boneScene = scenario === 'loot-art' || scenario === 'archaeology';
+        engine.state.abilities = boneScene
+          ? [scenario === 'archaeology' ? 'archaeologist' : 'aim-line']
+          : scenario === 'clone-diamond' ? ['clone', 'diamond-collector']
+            : ['risk-reward', 'gold-collector', 'diamond-collector', 'bomb-expert'];
+        engine.state.level = 12;
+        engine.state.phase = 'shop';
+        engine.state.pendingUpgrades = boneScene ? [] : ['polish'];
+        engine.nextLevel();
+        if (boneScene) {
+          engine.state.entities = [
+            makeEntity('rock-small', 270, 400, 1),
+            makeEntity('rock-large', 500, 400, 2),
+            makeEntity('bone-small', 730, 400, 3),
+            makeEntity('bone-large', 960, 400, 4),
+            makeEntity('gold-tiny', 80, 650, 5),
+          ];
+        } else {
+          const kind = scenario.startsWith('risk-gold') ? 'gold-large' : scenario === 'risk-mole' ? 'mole-diamond' : 'diamond';
+          const target = makeEntity(kind, 600, 340, 1);
+          applyRoundValue(target, engine.state.activeUpgrades);
+          target.speed = 0;
+          engine.state.entities = [
+            target,
+            makeEntity('tnt', scenario === 'risk-gold-far' ? 860 : 700, 360, 2),
+            makeEntity('gold-tiny', 80, 650, 3),
+          ];
+        }
+        engine.state.players[0].angle = 0;
+        engine.state.players[0].swingTime = 0;
+        engine.pause();
+      } else if (scenario === 'fossil-puzzle') {
+        engine.state.abilities = ['fossil-puzzle', 'archaeologist'];
+        engine.state.entities = [
+          makeEntity('bone-small', 730, 400, 1),
+          makeEntity('bone-large', 960, 400, 2),
+          makeEntity('gold-tiny', 75, 650, 3),
+        ];
+        engine.state.players[0].angle = 0;
+        engine.state.players[0].swingTime = 0;
+        engine.pause();
+      } else if (scenario === 'gold-growth') {
+        engine.state.abilities = ['gold-growth'];
+        engine.state.entities = [
+          makeEntity('gold-tiny', 250, 450, 1),
+          makeEntity('gold-small', 450, 500, 2),
+          makeEntity('gold-medium', 650, 550, 3),
+          makeEntity('gold-large', 950, 600, 4),
+        ];
+        engine.pause();
+      } else if (scenario === 'buzzer-delivery') {
+        engine.state.abilities = ['buzzer-delivery', 'gold-collector', 'clone', 'time-bank'];
+        engine.state.entities = [
+          makeEntity('gold-large', 600, 600, 1),
+          makeEntity('gold-tiny', 75, 650, 2),
+        ];
+        engine.tick(58.5);
+        engine.state.players[0].angle = 0;
+        engine.state.players[0].swingTime = 0;
+        engine.pause();
+      } else if (scenario === 'fuse-clone' || scenario === 'tnt-fragment') {
+        engine.state.abilities = scenario === 'fuse-clone' ? ['slow-fuse', 'clone', 'risk-reward'] : [];
+        engine.state.entities = [
+          makeEntity('tnt', 600, 350, 1),
+          makeEntity('gold-tiny', 600, 460, 2),
+          makeEntity('gold-tiny', 75, 650, 3),
+        ];
+        if (scenario === 'tnt-fragment') {
+          engine.state.entities.push(
+            makeEntity('tnt', 840, 450, 4),
+            makeEntity('gold-large', 1000, 550, 5),
+            makeEntity('tnt', 140, 600, 6),
+          );
+        }
+        engine.state.players[0].angle = 0;
+        engine.state.players[0].swingTime = 0;
+        engine.pause();
+      } else if (scenario === 'keyboard-cargo') {
+        engine.state.entities = engine.state.players.map((player, index) => makeEntity('gold-large', player.origin.x, 390, index + 1));
+        engine.state.entities.push(makeEntity('gold-tiny', 80, 650, 3));
+        for (const player of engine.state.players) {
+          player.angle = 0;
+          player.swingTime = 0;
+        }
+        engine.pause();
+      } else if (scenario === 'bag-strength') {
+        if (params.get('ability') === 'might') engine.state.abilities = ['might'];
+        engine.state.level = 12;
+        engine.state.phase = 'shop';
+        engine.nextLevel();
+        engine.state.score = engine.state.target;
+        const bag = makeEntity('bag', 600, 340, 1);
+        initialiseBag(bag, { abilities: engine.state.abilities, lucky: false, dynamite: engine.state.dynamite }, random);
+        bag.weight = 9;
+        engine.state.entities = [bag, makeEntity('gold-large', 800, 590, 2)];
+        engine.state.players[0].angle = 0;
+        engine.state.players[0].swingTime = 0;
+        engine.pause();
+      } else if (['empowered-mine', 'alchemy', 'moneybags'].includes(scenario)) {
+        engine.state.abilities = scenario === 'alchemy'
+          ? ['alchemy', 'gold-collector', 'aim-line', 'might']
+          : scenario === 'moneybags'
+            ? ['moneybags', 'might', 'gold-collector', 'aim-line']
+            : ['bomb-expert', 'wide-claw', 'aim-line', 'might'];
+        engine.state.level = 12;
+        engine.state.phase = 'shop';
+        engine.state.pendingUpgrades = [scenario === 'alchemy' ? 'rockbook' : scenario === 'moneybags' ? 'luck' : 'strength'];
+        engine.nextLevel();
+        const kind = scenario === 'alchemy' ? 'rock-small' : scenario === 'moneybags' ? 'bag' : 'tnt';
+        const target = makeEntity(kind, 600, 340, 1);
+        applyRoundValue(target, engine.state.activeUpgrades);
+        if (kind === 'bag') {
+          initialiseBag(target, {
+            abilities: engine.state.abilities,
+            lucky: engine.state.activeUpgrades.includes('luck'),
+            dynamite: engine.state.dynamite,
+          }, random);
+        }
+        engine.state.entities = [
+          target,
+          makeEntity('gold-tiny', 80, 650, 2),
+          makeEntity('tnt', 670, 370, 3),
+          makeEntity('diamond', 730, 380, 4),
+        ];
+        engine.state.players[0].angle = 0;
+        engine.state.players[0].swingTime = 0;
+        engine.pause();
+      } else {
+        throw new Error(`Unknown fixture scenario: ${scenario}`);
+      }
+      createRoot(document.getElementById('root')).render(createElement(App, { engine }));
+    </script>
+  </body>
+</html>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <title>Endless progression fixture</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import { createElement } from 'react';
+      import { createRoot } from 'react-dom/client';
+      import App from '/src/App.tsx';
+      import { GameEngine } from '/src/game/engine.ts';
+      import { levelTarget } from '/src/game/levels.ts';
+
+      const params = new URL(location.href).searchParams;
+      const mode = params.get('mode') ?? 'solo';
+      const level = Number(params.get('level') ?? 12);
+      if (mode !== 'solo' && mode !== 'coop') throw new Error('Invalid fixture mode.');
+      if (!Number.isSafeInteger(level) || level < 2) throw new Error('Invalid fixture level.');
+      const engine = new GameEngine(() => 0.1);
+      engine.start(mode);
+      engine.state.abilities = ['aim-line', 'might', 'gold-collector', 'diamond-collector'];
+      engine.state.abilityOffers = [];
+      engine.state.draftLevel = null;
+      engine.state.level = level - 1;
+      engine.state.score = levelTarget(level - 1);
+      engine.state.phase = 'shop';
+      engine.nextLevel();
+      engine.state.score = engine.state.target;
+      engine.pause();
+      window.getMiningState = () => structuredClone(engine.state);
+      createRoot(document.getElementById('root')).render(createElement(App, { engine }));
+    </script>
+  </body>
+</html>
