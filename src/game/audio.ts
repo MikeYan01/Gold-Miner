@@ -1,4 +1,6 @@
 import type { Sound } from './types';
+import { bilingual } from './i18n';
+import type { LocalizedText } from './i18n';
 
 type Scene = 'menu' | 'game' | 'shop' | 'silent';
 
@@ -10,7 +12,7 @@ export class GameAudio {
   private step = 0;
   private failed = false;
 
-  constructor(private enabled: boolean, private onError: (message: string) => void) {}
+  constructor(private enabled: boolean, private onError: (message: LocalizedText) => void) {}
 
   async unlock(): Promise<void> {
     if (!this.enabled || this.failed) return;
@@ -26,7 +28,7 @@ export class GameAudio {
     } catch (error) {
       this.failed = true;
       console.warn('[Gold Miner] Audio could not be started.', error);
-      this.onError('浏览器未能启用声音，仍可继续挖矿。');
+      this.onError(bilingual('浏览器未能启用声音，仍可继续挖矿。', 'Audio could not be started. You can still keep mining.'));
     }
   }
 

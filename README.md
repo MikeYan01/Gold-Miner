@@ -1,8 +1,8 @@
 # Gold Miner
 
-A classic-style browser mining game for one player or two friends on the same keyboard. The mine fills the browser window, with four HUD fields (money, target, time, and stage number) and icon-only controls. Aim the swinging claw, collect enough treasure before time runs out, and stock up at the shop between endless stages.
+A classic-style browser mining game for one player or two friends on the same keyboard. The mine fills the browser window, with four HUD fields (money, target, time, and stage number) and icon-based controls. Aim the swinging claw, collect enough treasure before time runs out, and stock up at the shop between endless stages.
 
-All illustrations, sound effects, and music are independently drawn or synthesized. This is a tribute to the classic gameplay, not a distribution of the original game's assets or levels. The interface is in Simplified Chinese.
+All illustrations, sound effects, and music are independently drawn or synthesized. This is a tribute to the classic gameplay, not a distribution of the original game's assets or levels. The interface supports Simplified Chinese and English.
 
 **[Play online](https://mikeyan01.github.io/Gold-Miner/)**
 
@@ -17,15 +17,17 @@ npm run dev
 
 Open the local URL printed in the terminal. No account, backend, or external asset service is required.
 
+Use the **EN / 中文** button in the upper-right controls to switch languages. The ability selection dialog has its own switch too. Language changes apply immediately to controls, abilities, shop text, notices, and on-screen rewards without restarting the run or re-rolling choices. The selection is saved in this browser alongside sound and high scores; older saves keep their records and start in Chinese.
+
 | Action | Solo | Co-op Player 1 (left) | Co-op Player 2 (right) |
 | --- | --- | --- | --- |
 | Launch the claw | Down arrow | S | Down arrow |
 | Destroy the item on your claw with dynamite | Up arrow | W | Up arrow |
 | Pause / resume | Escape or Space | Escape or Space | Escape or Space |
 
-Choose the one-miner or two-miner play button to start. Down arrow also opens the solo ability selection. The first countdown starts only after choosing an ability. Compact touch buttons appear on small screens. Leaving the browser tab automatically pauses the game. Audio starts after interaction and can be muted using the speaker icon.
+Choose the one-miner or two-miner play button to start. Down arrow also opens the solo ability selection. The first countdown starts only after choosing an ability. During play, touch-capable phones and tablets automatically show **launch** and **dynamite** buttons, including in landscape and wide tablet windows. Solo has one pair; co-op has a pair for each player on the left and right. Controls stay clear of screen safe areas and remain available in narrow windows without touch hardware. Leaving the browser tab automatically pauses the game. Audio starts after interaction and can be muted using the speaker icon.
 
-Shop items show their illustration, price, and a one-line effect description. The cart icon opens the shop after a successful stage, and the right arrow starts the next stage.
+Shop items show their illustration, price, and a short effect description. The cart icon opens the shop after a successful stage, and the right arrow starts the next stage.
 
 ## The mine
 

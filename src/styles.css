@@ -37,6 +37,7 @@ svg { display: block; flex-shrink: 0; }
 .game-button:hover:enabled, .mode-button:hover { background: linear-gradient(#fff2ae, #ffcb49); }
 .game-button:active:enabled, .mode-button:active { transform: translateY(2px); border-bottom-width: 2px; box-shadow: inset 0 1px #fff3bc; }
 .small-button { width: 43px; height: 40px; padding: 7px; border-width: 1.5px; border-bottom-width: 3px; border-radius: 6px; }
+.language-switch { padding-inline: 4px; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .large-button { width: 83px; height: 76px; }
 .large-button > svg { width: 39px; height: 39px; }
 .game-toolbar { position: absolute; top: 16px; right: 20px; display: flex; gap: 9px; z-index: 5; }
@@ -91,7 +92,7 @@ svg { display: block; flex-shrink: 0; }
 .item-price:hover:enabled { background: #ffe992; }
 .shop-item.item-purchased .item-art, .shop-item.item-purchased .item-price { opacity: .72; }
 .item-art { display: block; width: clamp(80px, 11vw, 155px); height: auto; aspect-ratio: 1; }
-.item-description { display: block; max-width: 100%; color: #735026; font-size: clamp(9px, .9vw, 14px); line-height: 1.4; white-space: nowrap; text-align: center; }
+.item-description { display: block; max-width: 100%; color: #735026; font-size: clamp(9px, .9vw, 14px); line-height: 1.4; overflow-wrap: anywhere; text-align: center; }
 .item-price { display: flex; justify-content: center; align-items: center; height: 44px; min-width: 96px; padding: 6px 13px; background: #fbd566; border: 2px solid #966318; border-radius: 7px; box-shadow: inset 0 2px #ffec9c, 0 3px #a5712650; color: #754315; font: 800 clamp(18px, 1.5vw, 27px)/1 Arial, sans-serif; }
 .item-purchased .item-price { color: #537317; background: #d3df8d; border-color: #7a8c3f; }
 .next-level { position: absolute; bottom: 25px; right: 32px; }
@@ -111,16 +112,22 @@ svg { display: block; flex-shrink: 0; }
 .ability-tooltip-detail { padding-top: 7px; border-top: 1px solid #e5d0a8; font-size: 11px; line-height: 1.75; color: #92744f; }
 .ability-dialog { width: min(900px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 28px); overflow-y: auto; border: 0; padding: 10px 15px 20px; background: transparent; color: #5e401b; }
 .ability-dialog::backdrop { background: #49331d91; backdrop-filter: blur(3px); }
-.ability-draft-heading { display: flex; align-items: center; justify-content: center; margin-bottom: 25px; }
-.ability-draft-heading h2 { margin: 0; color: #ffedb7; text-shadow: 0 2px #674318; font-size: 29px; letter-spacing: 3px; }
+.ability-draft-heading { position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 25px; padding-inline: 48px; }
+.ability-draft-heading h2 { margin: 0; color: #ffedb7; text-shadow: 0 2px #674318; font-size: 29px; letter-spacing: 3px; text-align: center; }
+.ability-draft-heading .language-switch { position: absolute; right: 0; top: 0; }
 .ability-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
 .ability-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 19px; min-width: 0; min-height: 288px; padding: 28px 20px 24px; border: 3px solid #9b6e28; border-bottom-width: 6px; border-radius: 15px; background: linear-gradient(#fff2ca, #efd398); box-shadow: inset 0 0 0 4px #fff5d18c, 0 6px 0 #4e351f66; text-align: center; }
 .ability-card:hover { border-color: #e9b342; background: linear-gradient(#fff7d9, #f9df9e); transform: translateY(-4px); }
 .ability-card:focus-visible { outline: 3px solid #fff3b9; outline-offset: 4px; border-color: #d6a13e; }
 .ability-card-number { position: absolute; top: 10px; left: 13px; color: #b99b64; font: 700 11px Georgia, serif; }
 .ability-card-emblem { display: block; flex-shrink: 0; width: 132px; height: 132px; border-radius: 50%; background: radial-gradient(#fff9df, #e5c37e66); }
-.ability-card > strong { font-size: 19px; font-weight: 800; line-height: 1.4; letter-spacing: .5px; text-wrap: balance; }
+.ability-card > strong { font-size: 19px; font-weight: 800; line-height: 1.4; letter-spacing: .5px; text-wrap: balance; overflow-wrap: anywhere; }
 .ability-card-description { font-size: 13px; line-height: 1.8; color: #967346; flex: 1; }
+
+@media (any-pointer: coarse), (max-width: 850px) {
+  .touch-controls { right: max(15px, env(safe-area-inset-right)); bottom: max(17px, env(safe-area-inset-bottom)); left: max(15px, env(safe-area-inset-left)); }
+  .touch-button { display: flex; }
+}
 
 @media (max-width: 850px) {
   :root { --hud-height: 76px; }
@@ -133,7 +140,6 @@ svg { display: block; flex-shrink: 0; }
   .game-toolbar { top: 12px; right: 13px; gap: 7px; }
   .inventory { top: 12px; left: 13px; }
   .mode-button { width: 141px; height: 82px; }
-  .touch-button { display: flex; }
   .shop-scene { padding: 50px 20px 86px; }
   .shop-shelf { gap: 7px; padding-left: 0; padding-right: 0; }
   .item-price { min-width: 78px; height: 36px; font-size: 19px; padding: 5px; }
@@ -163,13 +169,14 @@ svg { display: block; flex-shrink: 0; }
   .avatar-pair .miner-avatar { width: 36px; height: 43px; }
   .start-overlay { align-items: center; }
   .small-button { width: 36px; height: 35px; padding: 6px; }
+  .game-toolbar .language-switch { position: absolute; top: 42px; right: 86px; }
+  .language-switch { padding-inline: 4px; }
   .small-button > svg { width: 20px; height: 20px; }
   .inventory { gap: 1px; }
   .dynamite-counter { height: 33px; gap: 5px; padding: 4px 6px; }
   .dynamite-counter > svg { width: 21px; height: 21px; }
   .dynamite-counter b { font-size: 17px; }
   .active-upgrade .item-art { width: 32px; height: 32px; }
-  .touch-controls { bottom: max(17px, env(safe-area-inset-bottom)); }
   .touch-button { width: 58px; height: 54px; }
   .pause-controls { gap: 16px; padding: 23px; }
   .result-panel { min-width: 265px; padding: 27px; gap: 20px; }

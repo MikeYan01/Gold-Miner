@@ -9,6 +9,8 @@ import {
 import type { BagContext } from './economy';
 import { drawOriginalResources, RESOURCE_KINDS } from './resource-profiles';
 import { inTntBlast, TNT_BLAST_RADIUS } from './blast';
+import { bilingual } from './i18n';
+import type { LocalizedText } from './i18n';
 
 export const WIDTH = 1200;
 export const HEIGHT = 720;
@@ -25,23 +27,23 @@ const MIDDLE_MINE_TOP = SURFACE + (HEIGHT - SURFACE) / 3;
 const LOWER_MINE_TOP = SURFACE + (HEIGHT - SURFACE) * 2 / 3;
 
 export interface LevelInfo {
-  name: string;
-  hint: string;
+  name: LocalizedText;
+  hint: LocalizedText;
   target: number;
   duration: number;
 }
 
 export const LEVELS: readonly Pick<LevelInfo, 'name' | 'hint'>[] = [
-  { name: '初入金矿', hint: '大金块更值钱，不过拉上来也更费时间。' },
-  { name: '沙砾寻金', hint: '先看清岩石之间的空隙，再下钩。' },
-  { name: '宝石矿脉', hint: '钻石小巧又轻盈，一颗就值 $600。' },
-  { name: '神秘布袋', hint: '布袋可能有金币、炸药，也可能带来本关生力效果。' },
-  { name: '鼹鼠出没', hint: '普通鼹鼠只值 $2，小心它们挡住宝藏。' },
-  { name: '疾走宝藏', hint: '瞄准叼着钻石的鼹鼠，别急着出钩。' },
-  { name: '遗骨矿坑', hint: 'TNT可能连锁爆炸，先取走附近的宝藏。' },
-  { name: '星光矿洞', hint: '钻石抛光剂让钻石增值50%，$600变成$900。' },
-  { name: '爆破遗迹', hint: '危险与宝藏相伴，别把整片矿脉一起炸掉。' },
-  { name: '黄金深处', hint: '保留富矿关的盈余，才能应对后续的贫矿关。' },
+  { name: bilingual('初入金矿', 'The First Mine'), hint: bilingual('大金块更值钱，不过拉上来也更费时间。', 'Large nuggets are worth more, but take longer to haul.') },
+  { name: bilingual('沙砾寻金', 'Gold in the Gravel'), hint: bilingual('先看清岩石之间的空隙，再下钩。', 'Look for gaps between the rocks before launching.') },
+  { name: bilingual('宝石矿脉', 'Diamond Vein'), hint: bilingual('钻石小巧又轻盈，一颗就值 $600。', 'Diamonds are small and light, and worth $600 each.') },
+  { name: bilingual('神秘布袋', 'Mystery Bags'), hint: bilingual('布袋可能有金币、炸药，也可能带来本关生力效果。', 'Bags can hold cash, dynamite, or fast hauling for this stage.') },
+  { name: bilingual('鼹鼠出没', 'Mole Territory'), hint: bilingual('普通鼹鼠只值 $2，小心它们挡住宝藏。', 'Ordinary moles are worth only $2. Watch out for them blocking treasure.') },
+  { name: bilingual('疾走宝藏', 'Treasure on the Move'), hint: bilingual('瞄准叼着钻石的鼹鼠，别急着出钩。', 'Take your time to aim at diamond-carrying moles.') },
+  { name: bilingual('遗骨矿坑', 'Fossil Pit'), hint: bilingual('TNT可能连锁爆炸，先取走附近的宝藏。', 'TNT can trigger chain reactions. Collect nearby treasure first.') },
+  { name: bilingual('星光矿洞', 'Starlight Cavern'), hint: bilingual('钻石抛光剂让钻石增值50%，$600变成$900。', 'Diamond polish adds 50% to diamond value: $600 becomes $900.') },
+  { name: bilingual('爆破遗迹', 'Blasting Ruins'), hint: bilingual('危险与宝藏相伴，别把整片矿脉一起炸掉。', 'Danger and treasure lie together. Do not blow up the whole mine.') },
+  { name: bilingual('黄金深处', 'Golden Depths'), hint: bilingual('保留富矿关的盈余，才能应对后续的贫矿关。', 'Save the surplus from rich mines to get through poorer stages.') },
 ];
 export const OPENING_LEVEL_COUNT = LEVELS.length;
 
@@ -258,11 +260,11 @@ function placeMine(entities: Entity[], mode: Mode, abilities: readonly AbilityId
 }
 
 const SHOP_DETAILS: Record<ShopItemId, Pick<ShopItem, 'name' | 'description' | 'tag'>> = {
-  dynamite: { name: '一捆炸药', description: '炸掉钩上的重物', tag: '可以囤着用' },
-  strength: { name: '大力水', description: '下关力量 +2', tag: '下关生效' },
-  luck: { name: '幸运四叶草', description: '下关布袋奖励更好', tag: '下关生效' },
-  rockbook: { name: '石头收藏书', description: '下关石头售价 ×3', tag: '下关生效' },
-  polish: { name: '钻石抛光剂', description: '下关钻石售价 +50%', tag: '下关生效' },
+  dynamite: { name: bilingual('一捆炸药', 'Dynamite'), description: bilingual('炸掉钩上的重物', 'Blast held cargo'), tag: bilingual('可以囤着用', 'Carries over') },
+  strength: { name: bilingual('大力水', 'Strength Drink'), description: bilingual('下关力量 +2', 'Next: strength +2'), tag: bilingual('下关生效', 'Next stage') },
+  luck: { name: bilingual('幸运四叶草', 'Lucky Clover'), description: bilingual('下关布袋奖励更好', 'Next: luckier bags'), tag: bilingual('下关生效', 'Next stage') },
+  rockbook: { name: bilingual('石头收藏书', 'Rock Book'), description: bilingual('下关石头售价 ×3', 'Next: rocks ×3'), tag: bilingual('下关生效', 'Next stage') },
+  polish: { name: bilingual('钻石抛光剂', 'Diamond Polish'), description: bilingual('下关钻石售价 +50%', 'Next: diamonds +50%'), tag: bilingual('下关生效', 'Next stage') },
 };
 
 export interface ShopOptions {

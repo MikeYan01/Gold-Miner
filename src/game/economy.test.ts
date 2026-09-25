@@ -206,7 +206,7 @@ describe('original six-way mystery-bag rewards', () => {
       expect(engine.steal('strength')).toBe(false);
       expect(engine.state.shopStealsRemaining).toBe(2);
       expect(engine.state.pendingUpgrades).toEqual([]);
-      expect(engine.state.notice?.text).toContain('未上架');
+      expect(engine.state.notice?.text['zh-CN']).toContain('未上架');
     });
   });
 

@@ -3,8 +3,10 @@ import type { KeyboardEvent } from 'react';
 import type { GameEngine } from '../game/engine';
 import { getAbility } from '../game/abilities';
 import { AbilityArt } from './Art';
+import { LanguageSwitch, useLanguage } from './Language';
 
 export function AbilityDraft({ engine }: { engine: GameEngine }) {
+  const { language, t } = useLanguage();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const cards = useRef<(HTMLButtonElement | null)[]>([]);
   const offers = engine.state.abilityOffers;
@@ -44,18 +46,19 @@ export function AbilityDraft({ engine }: { engine: GameEngine }) {
       onKeyDown={navigate}
     >
       <div className="ability-draft-heading">
-        <h2 id="ability-draft-title">选择能力</h2>
+        <h2 id="ability-draft-title">{t('选择能力', 'Choose an ability')}</h2>
+        <LanguageSwitch />
       </div>
       <div className="ability-cards">
         {offers.map((id, index) => {
-          const ability = getAbility(id, engine.state.mode);
+          const ability = getAbility(id, engine.state.mode, language);
           return (
             <button
               key={id}
               ref={(element) => { cards.current[index] = element; }}
               className="ability-card"
               data-ability={id}
-              aria-label={`选择能力：${ability.name}`}
+              aria-label={t(`选择能力：${ability.name}`, `Choose ability: ${ability.name}`)}
               aria-describedby={`ability-description-${id}`}
               onClick={() => engine.chooseAbility(id)}
             >

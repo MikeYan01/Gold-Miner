@@ -21,7 +21,7 @@ test('requires one unique three-card choice before the shared countdown can star
   await expect(page.locator('.ability-card')).toHaveCount(3);
   const offers = await page.locator('.ability-card').evaluateAll((cards) => cards.map((card) => card.getAttribute('data-ability')));
   expect(new Set(offers).size).toBe(3);
-  await expect(draft.getByRole('button')).toHaveCount(3);
+  await expect(draft.getByRole('button')).toHaveCount(4);
   await expect(draft.locator('.ability-draft-actions, .ability-pick-count, .ability-card-select, .ability-draft-progress')).toHaveCount(0);
   await expect(draft.locator('[title]')).toHaveCount(0);
   await page.locator('.ability-card').first().focus();
@@ -474,10 +474,12 @@ test('mobile ability cards are all readable and selectable before the first coun
   await expect(page.locator('[data-player="1"]')).toHaveAttribute('data-hook-phase', 'extending');
 });
 
-test('the simplified draft contains no actions, progress chrome, or checkmark badges', async ({ page }, testInfo) => {
+test('the simplified draft has only three choices and a language switch, without progress chrome or badges', async ({ page }, testInfo) => {
   await freeze(page, '/tests/abilities.html?scenario=draft-clean');
   const draft = page.getByRole('dialog', { name: '选择能力' });
-  await expect(draft.getByRole('button')).toHaveCount(3);
+  await expect(draft.getByRole('button')).toHaveCount(4);
+  await expect(draft.locator('.ability-card')).toHaveCount(3);
+  await expect(draft.getByRole('button', { name: 'Switch to English', exact: true })).toBeVisible();
   await expect(draft.locator('svg, .ability-draft-actions, .ability-pick-count, .ability-card-select, .ability-draft-progress')).toHaveCount(0);
   const greenBadgePixels = await draft.locator('[data-ability="bomb-expert"] canvas').evaluate((element) => {
     if (!(element instanceof HTMLCanvasElement)) throw new Error('The card artwork was not rendered.');

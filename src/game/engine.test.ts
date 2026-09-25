@@ -364,7 +364,7 @@ describe('dynamite, hazards, and loot', () => {
     const engine = fixture();
     engine.action(1, 'bomb');
     expect(engine.state.dynamite).toBe(1);
-    expect(engine.state.notice?.text).toContain('抓住重物');
+    expect(engine.state.notice?.text['zh-CN']).toContain('抓住重物');
   });
 
   it('destroys cargo without awarding money and returns the hook unladen', () => {
@@ -386,7 +386,7 @@ describe('dynamite, hazards, and loot', () => {
     expect(engine.state.players[0].reel?.cursor).toBe(cursor + 31);
     engine.action(1, 'bomb');
     expect(engine.state.dynamite).toBe(0);
-    expect(engine.state.notice?.text).toContain('没有炸药');
+    expect(engine.state.notice?.text['zh-CN']).toContain('没有炸药');
   });
 
   it('chains TNT explosions, destroys nearby valuables, and leaves distant items alone', () => {
@@ -404,7 +404,7 @@ describe('dynamite, hazards, and loot', () => {
     expect(engine.state.score).toBe(1);
     expect(engine.state.dynamite).toBe(1);
     expect(engine.state.players[0].cargoId).toBeNull();
-    expect(engine.state.notice?.text).toContain('TNT');
+    expect(engine.state.notice?.text['zh-CN']).toContain('TNT');
   });
 
   it('clears the other player’s cargo if it is inside a TNT blast', () => {
@@ -514,7 +514,7 @@ describe('timer, progression, and shop', () => {
     acquire(engine);
     engine.finishEarly();
     expect(engine.state.phase).toBe('playing');
-    expect(engine.state.notice?.text).toContain('钩上');
+    expect(engine.state.notice?.text['zh-CN']).toContain('钩上');
   });
 
   it('finishes an exhausted mine without making the player wait', () => {
@@ -552,7 +552,7 @@ describe('timer, progression, and shop', () => {
     engine.state.score = 0;
     expect(engine.buy('luck')).toBe(false);
     expect(engine.state.pendingUpgrades).not.toContain('luck');
-    expect(engine.state.notice?.text).toContain('金币不够');
+    expect(engine.state.notice?.text['zh-CN']).toContain('金币不够');
   });
 
   it('carries the wallet and bombs forward but consumes upgrades after one stage', () => {
@@ -635,7 +635,8 @@ describe('timer, progression, and shop', () => {
     expect(engine.state.phase).toBe('playing');
     expect(engine.state.target).toBe(levelTarget(1_000_000));
     expect(engine.state.entities.length).toBeLessThanOrEqual(40);
-    expect(engine.state.levelName).not.toBe('');
+    expect(engine.state.levelName['zh-CN']).not.toBe('');
+    expect(engine.state.levelName.en).not.toBe('');
   });
 });
 

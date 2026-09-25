@@ -18,6 +18,8 @@ import {
 import { createReelMotion, ORIGINAL_FRAME_RATE, ORIGINAL_STAGE_HEIGHT, originalReelDistance, stepOriginalReel } from './hauling';
 import { ORIGINAL_STARTING_DYNAMITE, ORIGINAL_STARTING_MONEY } from './economy';
 import { inTntBlast, TNT_BLAST_RADIUS } from './blast';
+import { bilingual, DEFAULT_LANGUAGE } from './i18n';
+import type { DisplayText, Language, LocalizedText } from './i18n';
 
 export { inTntBlast, TNT_BLAST_RADIUS } from './blast';
 
@@ -209,7 +211,7 @@ export class GameEngine {
     this.soundListeners.forEach((listener) => listener(sound));
   }
 
-  notify(text: string, tone: 'normal' | 'good' | 'warning' = 'normal'): void {
+  notify(text: LocalizedText, tone: 'normal' | 'good' | 'warning' = 'normal'): void {
     this.state.notice = { id: ++this.noticeId, text, tone };
     this.noticeRemaining = 3.5;
     this.publish();
@@ -241,7 +243,7 @@ export class GameEngine {
     const state = this.state;
     if (state.phase !== 'draft') return false;
     if (!state.abilityOffers.includes(id) || !canAcquireAbility(id, state.abilities)) {
-      this.notify('请选择本次展示的一个新能力。', 'warning');
+      this.notify(bilingual('请选择本次展示的一个新能力。', 'Choose one of the new abilities offered.'), 'warning');
       this.sound('denied');
       return false;
     }
@@ -253,7 +255,7 @@ export class GameEngine {
     this.sound('buy');
     if (level === 1) this.beginLevel(1);
     else this.enterShop();
-    this.notify(`已获得${getAbility(id, state.mode).name}。`, 'good');
+    this.notify(bilingual(`已获得${getAbility(id, state.mode).name}。`, `Acquired ${getAbility(id, state.mode, 'en').name}.`), 'good');
     return true;
   }
 
@@ -287,12 +289,12 @@ export class GameEngine {
       return;
     }
     if (this.state.dynamite === 0) {
-      this.notify('没有炸药了，去商店补给或寻找钱袋。', 'warning');
+      this.notify(bilingual('没有炸药了，去商店补给或寻找钱袋。', 'No dynamite left. Buy more at the shop or find a mystery bag.'), 'warning');
       this.sound('denied');
       return;
     }
     if (player.cargoId === null) {
-      this.notify('抓住重物后，才能用炸药把它炸掉。', 'warning');
+      this.notify(bilingual('抓住重物后，才能用炸药把它炸掉。', 'Catch an item before using dynamite to destroy it.'), 'warning');
       return;
     }
     const cargo = this.state.entities.find((entity) => entity.id === player.cargoId);
@@ -300,7 +302,7 @@ export class GameEngine {
     this.state.dynamite--;
     this.destroy(cargo);
     this.burst(cargo.x, cargo.y, '#e87435', 30);
-    this.float(cargo.x, cargo.y - 35 / this.viewport.stretchY, '轰！', '#a94723');
+    this.float(cargo.x, cargo.y - 35 / this.viewport.stretchY, bilingual('轰！', 'BOOM!'), '#a94723');
     this.sound('explosion');
     this.publish();
   }
@@ -377,7 +379,7 @@ export class GameEngine {
     const nextKind = entity.kind === 'gold-tiny' ? 'gold-small' : entity.kind === 'gold-small' ? 'gold-medium' : 'gold-large';
     Object.assign(entity, makeEntity(nextKind, entity.x, entity.y, entity.id));
     this.burst(entity.x, entity.y, '#fbe470', 12);
-    this.float(entity.x, entity.y - entity.radius / this.viewport.stretchY, `长大了！$${entity.value}`, '#bf7012');
+    this.float(entity.x, entity.y - entity.radius / this.viewport.stretchY, bilingual(`长大了！$${entity.value}`, `Grew! $${entity.value}`), '#bf7012');
     this.sound('gem');
   }
 
@@ -400,7 +402,7 @@ export class GameEngine {
         if (entity.kind === 'tnt' && !this.state.abilities.includes('bomb-expert')) {
           if (this.state.abilities.includes('slow-fuse')) {
             entity.fuseRemaining = SLOW_FUSE_SECONDS;
-            this.float(entity.x, entity.y - 40 / this.viewport.stretchY, '引信点燃！', '#a94529');
+            this.float(entity.x, entity.y - 40 / this.viewport.stretchY, bilingual('引信点燃！', 'Fuse lit!'), '#a94529');
             this.sound('tick');
             return;
           }
@@ -472,7 +474,7 @@ export class GameEngine {
     const cloneMultiplier = entity.id === state.clonedEntityId ? CLONE_REWARD_MULTIPLIER : 1;
     const treasureMultiplier = (entity.riskBonus ? RISK_VALUE_MULTIPLIER : 1)
       * (state.abilities.includes('time-rush') ? RUSH_VALUE_MULTIPLIER : 1);
-    let label = '';
+    let label: DisplayText = '';
     let sound: Sound = 'gold';
     if (entity.kind.startsWith('gold')) {
       state.goldCollected++;
@@ -498,10 +500,10 @@ export class GameEngine {
       if (reward.kind === 'dynamite') {
         const amount = reward.amount * cloneMultiplier;
         state.dynamite += amount;
-        label = `炸药 +${amount}`;
+        label = bilingual(`炸药 +${amount}`, `Dynamite +${amount}`);
       } else if (reward.kind === 'strength') {
         state.bagStrength = true;
-        label = '本关生力';
+        label = bilingual('本关生力', 'Fast hauling');
       } else {
         value = reward.value;
       }
@@ -518,11 +520,11 @@ export class GameEngine {
     player.roundEarned += value;
     this.float(player.origin.x, player.origin.y - 31 / this.viewport.stretchY, label || `+$${value}`, value >= 500 ? '#bf7012' : '#775029');
     this.burst(player.origin.x, player.origin.y - 3 / this.viewport.stretchY, value >= 500 ? '#fbe470' : '#e7ba4c', 14);
-    if (fossilBonus > 0) this.float(player.origin.x, player.origin.y - 65 / this.viewport.stretchY, `化石拼图 +$${fossilBonus}`, '#bf7012');
+    if (fossilBonus > 0) this.float(player.origin.x, player.origin.y - 65 / this.viewport.stretchY, bilingual(`化石拼图 +$${fossilBonus}`, `Fossil Puzzle +$${fossilBonus}`), '#bf7012');
     this.sound(sound);
     if (state.score >= state.target && !state.goalAnnounced) {
       state.goalAnnounced = true;
-      this.notify('目标达成！继续挖，或提前收工去逛商店。', 'good');
+      this.notify(bilingual('目标达成！继续挖，或提前收工去逛商店。', 'Target reached! Keep mining or finish early to visit the shop.'), 'good');
       this.sound('win');
     }
     this.publish();
@@ -566,7 +568,9 @@ export class GameEngine {
       }
     }
     this.sound('explosion');
-    this.notify(detonated.size > 1 ? 'TNT 引发连锁爆炸，矿场遭到大范围破坏！' : 'TNT 炸毁了大范围矿物，小心红色炸药箱！', 'warning');
+    this.notify(detonated.size > 1
+      ? bilingual('TNT 引发连锁爆炸，矿场遭到大范围破坏！', 'TNT triggered a chain reaction and destroyed a large part of the mine!')
+      : bilingual('TNT 炸毁了大范围矿物，小心红色炸药箱！', 'TNT destroyed nearby minerals. Watch out for the red crates!'), 'warning');
   }
 
   private burst(x: number, y: number, color: string, count: number): void {
@@ -583,14 +587,14 @@ export class GameEngine {
     }
   }
 
-  private float(x: number, y: number, text: string, color: string): void {
+  private float(x: number, y: number, text: DisplayText, color: string): void {
     this.state.texts.push({ x, y, text, color, life: 1.6 });
   }
 
   finishEarly(): void {
     if (this.state.phase !== 'playing' || this.state.score < this.state.target) return;
     if (this.state.players.some((player) => player.cargoId !== null)) {
-      this.notify('还有矿物在钩上，先收回来再收工吧。');
+      this.notify(bilingual('还有矿物在钩上，先收回来再收工吧。', 'Bring back the cargo on your hooks before finishing early.'));
       return;
     }
     this.finishRound();
@@ -657,28 +661,31 @@ export class GameEngine {
     if (this.state.phase !== 'shop') return false;
     const item = this.state.shop.find((candidate) => candidate.id === id);
     if (!item) {
-      this.notify('这件商品本次未上架。', 'warning');
+      this.notify(bilingual('这件商品本次未上架。', 'This item is not available in this shop.'), 'warning');
       this.sound('denied');
       return false;
     }
     if (item.bought >= item.stock) {
-      this.notify('这件补给已经买齐啦。', 'warning');
+      this.notify(bilingual('这件补给已经买齐啦。', 'You have already bought this supply.'), 'warning');
       return false;
     }
     if (item.price === null) {
-      this.notify('价格已超出钱包可支付的范围。', 'warning');
+      this.notify(bilingual('价格已超出钱包可支付的范围。', 'This price exceeds the supported wallet limit.'), 'warning');
       this.sound('denied');
       return false;
     }
     if (this.state.score < item.price) {
-      this.notify('金币不够啦，留待下次再买吧。', 'warning');
+      this.notify(bilingual('金币不够啦，留待下次再买吧。', 'Not enough gold. Save this purchase for another visit.'), 'warning');
       this.sound('denied');
       return false;
     }
     this.state.score -= item.price;
     this.grantShopItem(item);
     this.sound('buy');
-    this.notify(`买好啦！${item.name}${id === 'dynamite' ? '已放进背包。' : '将在下一关生效。'}`, 'good');
+    this.notify(bilingual(
+      `买好啦！${item.name['zh-CN']}${id === 'dynamite' ? '已放进背包。' : '将在下一关生效。'}`,
+      `Purchased ${item.name.en}${id === 'dynamite' ? '. Added to your inventory.' : '. Active next stage.'}`,
+    ), 'good');
     return true;
   }
 
@@ -686,23 +693,26 @@ export class GameEngine {
     const state = this.state;
     if (state.phase !== 'shop') return false;
     if (!state.abilities.includes('thief') || state.shopStealsRemaining <= 0) {
-      this.notify('本次商店没有可用的偷取次数。', 'warning');
+      this.notify(bilingual('本次商店没有可用的偷取次数。', 'No free thefts remain for this shop visit.'), 'warning');
       this.sound('denied');
       return false;
     }
     const item = state.shop.find((entry) => entry.id === id);
     if (!item) {
-      this.notify('这件商品本次未上架。', 'warning');
+      this.notify(bilingual('这件商品本次未上架。', 'This item is not available in this shop.'), 'warning');
       return false;
     }
     if (item.bought >= item.stock) {
-      this.notify('这件商品已经没有库存了。', 'warning');
+      this.notify(bilingual('这件商品已经没有库存了。', 'This item is sold out.'), 'warning');
       return false;
     }
     state.shopStealsRemaining--;
     this.grantShopItem(item);
     this.sound('buy');
-    this.notify(`已免费取得${item.name}，剩余${state.shopStealsRemaining}次。`, 'good');
+    this.notify(bilingual(
+      `已免费取得${item.name['zh-CN']}，剩余${state.shopStealsRemaining}次。`,
+      `Stole ${item.name.en} for free. Thefts remaining: ${state.shopStealsRemaining}.`,
+    ), 'good');
     return true;
   }
 
@@ -760,6 +770,10 @@ export class GameEngine {
   }
 }
 
-export function hookLabel(phase: HookPhase): string {
-  return { swinging: '瞄准中', extending: '下钩中', retracting: '收钩中' }[phase];
+export function hookLabel(phase: HookPhase, language: Language = DEFAULT_LANGUAGE): string {
+  return {
+    swinging: bilingual('瞄准中', 'Aiming'),
+    extending: bilingual('下钩中', 'Launching'),
+    retracting: bilingual('收钩中', 'Hauling'),
+  }[phase][language];
 }

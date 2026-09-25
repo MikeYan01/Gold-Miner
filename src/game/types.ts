@@ -1,4 +1,5 @@
 import type { ReelMotion } from './hauling';
+import type { DisplayText, LocalizedText } from './i18n';
 
 export type Mode = 'solo' | 'coop';
 export type Phase = 'menu' | 'draft' | 'playing' | 'paused' | 'results' | 'shop' | 'gameover';
@@ -110,26 +111,26 @@ export interface Particle extends Point {
 }
 
 export interface FloatingText extends Point {
-  text: string;
+  text: DisplayText;
   color: string;
   life: number;
 }
 
 export interface Notice {
   id: number;
-  text: string;
+  text: LocalizedText;
   tone: 'normal' | 'good' | 'warning';
 }
 
 export interface ShopItem {
   id: ShopItemId;
-  name: string;
-  description: string;
+  name: LocalizedText;
+  description: LocalizedText;
   price: number | null;
   priceText: string;
   stock: number;
   bought: number;
-  tag: string;
+  tag: LocalizedText;
 }
 
 export interface RoundResult {
@@ -147,7 +148,7 @@ export interface GameState {
   phase: Phase;
   mode: Mode;
   level: number;
-  levelName: string;
+  levelName: LocalizedText;
   score: number;
   target: number;
   timeLeft: number;

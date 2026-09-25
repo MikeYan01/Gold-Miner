@@ -1,12 +1,21 @@
 import { shuffled } from './random';
 import type { AbilityId, Mode } from './types';
 import { MIGHT_SPEED_MULTIPLIER } from './hauling';
+import { bilingual, DEFAULT_LANGUAGE } from './i18n';
+import type { Language, LocalizedText } from './i18n';
 
 export interface Ability {
   id: AbilityId;
   name: string;
   description: string;
   detail: string;
+}
+
+interface AbilityDefinition {
+  id: AbilityId;
+  name: LocalizedText;
+  description: LocalizedText;
+  detail: LocalizedText;
 }
 
 export const MAX_ABILITIES = 4;
@@ -29,36 +38,131 @@ export const GOLD_GROWTH_INTERVAL = 10;
 export const BAG_COUNTS = [0.15, 0.45, 0.25, 0.12, 0.03] as const;
 export const MONEYBAGS_COUNTS = [0.05, 0.32, 0.4, 0.18, 0.05] as const;
 
-export const ABILITIES: readonly Ability[] = [
-  { id: 'might', name: '大力', description: '载物回拉速度增加35%', detail: '在原版回拉效果上额外加速35%，不改变力量值；钱袋使用普通奖池，仍可抽到本关生力。' },
-  { id: 'gold-collector', name: '金块收藏家', description: `所有金块的结算价值增加${GOLD_COLLECTOR_BONUS_PERCENT}%`, detail: '包括点石成金产生的黄金；不影响钻石、钱袋现金或TNT。' },
-  { id: 'diamond-collector', name: '钻石收藏家', description: `钻石的结算价值增加${DIAMOND_COLLECTOR_BONUS_PERCENT}%`, detail: '与钻石抛光剂乘算至1035元；携钻鼹鼠的钻石部分同样生效。' },
-  { id: 'alchemy', name: '点石成金', description: '抓到石头时，20%概率变成大金块', detail: '每块石头只判定一次；成功后价值500、重量按大金块计算，可叠加金块收藏家。' },
-  { id: 'aim-line', name: '射线', description: '显示钩子朝向的辅助瞄准线', detail: '停在当前第一个可碰到的目标；移动目标仍需把握出钩时机。' },
-  { id: 'wide-claw', name: '深渊巨口', description: `钩子宽度增加${(WIDE_CLAW_MULTIPLIER - 1) * 100}%，更容易命中`, detail: '钩本身的判定范围同步扩大；仍只抓最先碰到的一个目标，也更容易碰到附近的石头。' },
-  { id: 'diamond-vein', name: '璀璨胜金', description: '每块黄金有10%概率变成钻石', detail: '在每关生成矿场时生效；不再次转换采集中点石成金的产物。' },
-  { id: 'bomb-expert', name: '拆弹专家', description: 'TNT不再爆炸，可以挖出换取50元', detail: 'TNT重量与50元金块相同；不影响主动使用炸药，TNT仍不属于黄金；与慢燃引信互斥。' },
-  { id: 'diamond-moles', name: '谁动了我的钻石', description: '每关额外出现1只携钻鼹鼠', detail: '双人全队合计增加1只；与钻石收藏家和抛光剂兼容。' },
-  { id: 'moneybags', name: '钱袋子', description: '更多钱袋、必装现金，按钻石重量', detail: '平均钱袋数量增加约30%，固定为钻石重量2；三叶草仍会提高现金奖励。' },
-  { id: 'thief', name: '窃贼', description: '每次商店可免费偷取2件商品', detail: '只能选择本店已上架且未售出的商品；全队共用2次，正常扣库存，次数不跨店累积。' },
-  { id: 'risk-reward', name: '富贵险中求', description: `TNT附近的黄金、钻石价值增加${Math.round((RISK_VALUE_MULTIPLIER - 1) * 100)}%`, detail: `仅TNT爆炸半径${RISK_RADIUS_MULTIPLIER * 100}%范围内生效；抓住时锁定加成，可与收藏家和抛光剂乘算；仍在矿场的安全TNT同样有效，鼹鼠本身的2元不加成。` },
-  { id: 'time-bank', name: '时间银行', description: `提前过关时，每剩余1秒获得${TIME_BANK_COINS_PER_SECOND}元`, detail: '按界面剩余整秒结算；主动收工或清空矿场提前过关均生效，不再延长下一关。' },
-  { id: 'airy-moles', name: '透气的鼹鼠', description: '携钻鼹鼠更容易出现在矿场中上层', detail: '将携钻鼹鼠的出生位置偏向中层和上层，也影响额外生成的鼹鼠；不再改变移动速度或回拉重量。' },
-  { id: 'slow-fuse', name: '慢燃引信', description: '触碰TNT后继续出钩，TNT延迟3秒爆炸', detail: '点燃后不会再次挡钩，暂停时引信也暂停；连锁爆炸不延迟，可配合富贵险中求，与拆弹专家互斥。' },
-  { id: 'time-rush', name: '争分夺秒', description: '每关基础时间缩短20%，黄金和钻石价值增加30%', detail: '不改变目标金币；收益可与收藏家、抛光剂及富贵险中求乘算，不加成鼹鼠本身的2元。' },
-  { id: 'regular-customer', name: '老主顾', description: '每次商店必有大力水、三叶草和钻石抛光剂', detail: '价格与每店限购1件保持不变；可正常购买或用窃贼偷取，选到后立即影响本次商店。' },
-  { id: 'archaeologist', name: '考古学家', description: '长骨价值变为140元，头骨价值变为400元', detail: '重量保持不变；骨头仍不属于石头、黄金或钻石，不受石头书、收藏家或富贵险中求加成。' },
-  { id: 'clone', name: '克隆', description: '每关首次抓住的物品，最终收益翻倍', detail: '全队共享1次，抓住即锁定，需成功带回；现金与炸药翻倍，生力不叠加，炸毁也消耗本关机会。' },
-  { id: 'fossil-puzzle', name: '化石拼图', description: '每关集齐长骨和头骨，额外获得500元', detail: '两种骨头各收回1件即可，顺序不限，全队共享每关1次；骨头本身正常结算，拼图奖金不受克隆等售价加成。' },
-  { id: 'gold-growth', name: '黄金生长', description: '每10秒，随机一颗黄金长大一档', detail: '每次仅1颗：50→100→250→500元；从地下未抓住且未满档的黄金中等概率抽选，同一颗可多次长大，体积和重量同步增长；暂停不计时。' },
-  { id: 'buzzer-delivery', name: '压哨交货', description: '时间归零时，钩上已抓住的物品照常结算', detail: '无需先拉回地面，双人两只钩均有效；保留全部收益加成和钱袋奖励，空钩或已炸毁的货物不算，结算后再判断过关。' },
+export const ABILITIES: readonly AbilityDefinition[] = [
+  {
+    id: 'might', name: bilingual('大力', 'Might'),
+    description: bilingual('载物回拉速度增加35%', 'Loaded hauling speed +35%'),
+    detail: bilingual('在原版回拉效果上额外加速35%，不改变力量值；钱袋使用普通奖池，仍可抽到本关生力。', 'Adds 35% speed after the original hauling mode is chosen, without changing strength. Bags keep their normal prizes, including stage-long fast hauling.'),
+  },
+  {
+    id: 'gold-collector', name: bilingual('金块收藏家', 'Gold Collector'),
+    description: bilingual(`所有金块的结算价值增加${GOLD_COLLECTOR_BONUS_PERCENT}%`, `All gold is worth ${GOLD_COLLECTOR_BONUS_PERCENT}% more`),
+    detail: bilingual('包括点石成金产生的黄金；不影响钻石、钱袋现金或TNT。', 'Includes gold made by Alchemy. Does not affect diamonds, cash bags, or TNT.'),
+  },
+  {
+    id: 'diamond-collector', name: bilingual('钻石收藏家', 'Diamond Collector'),
+    description: bilingual(`钻石的结算价值增加${DIAMOND_COLLECTOR_BONUS_PERCENT}%`, `Diamonds are worth ${DIAMOND_COLLECTOR_BONUS_PERCENT}% more`),
+    detail: bilingual('与钻石抛光剂乘算至1035元；携钻鼹鼠的钻石部分同样生效。', 'Combines with diamond polish for $1,035 diamonds. Also boosts the diamond portion of diamond moles.'),
+  },
+  {
+    id: 'alchemy', name: bilingual('点石成金', 'Alchemy'),
+    description: bilingual('抓到石头时，20%概率变成大金块', 'Caught rocks have a 20% chance to become large gold'),
+    detail: bilingual('每块石头只判定一次；成功后价值500、重量按大金块计算，可叠加金块收藏家。', 'One roll per rock. Success gives a $500 nugget with large-gold weight. Stacks with Gold Collector.'),
+  },
+  {
+    id: 'aim-line', name: bilingual('射线', 'Aim Line'),
+    description: bilingual('显示钩子朝向的辅助瞄准线', 'Shows a guide along the claw direction'),
+    detail: bilingual('停在当前第一个可碰到的目标；移动目标仍需把握出钩时机。', 'Stops at the first object in the current path. You still need to time shots at moving targets.'),
+  },
+  {
+    id: 'wide-claw', name: bilingual('深渊巨口', 'Wide Claw'),
+    description: bilingual(`钩子宽度增加${(WIDE_CLAW_MULTIPLIER - 1) * 100}%，更容易命中`, `Claw width +${(WIDE_CLAW_MULTIPLIER - 1) * 100}% for easier catches`),
+    detail: bilingual('钩本身的判定范围同步扩大；仍只抓最先碰到的一个目标，也更容易碰到附近的石头。', 'Doubles the claw hit area too. Still catches only the first object, so nearby rocks are also easier to hit.'),
+  },
+  {
+    id: 'diamond-vein', name: bilingual('璀璨胜金', 'Diamond Vein'),
+    description: bilingual('每块黄金有10%概率变成钻石', 'Each gold nugget has a 10% chance to become a diamond'),
+    detail: bilingual('在每关生成矿场时生效；不再次转换采集中点石成金的产物。', 'Rolls when each mine is generated. Does not convert gold created by Alchemy during play.'),
+  },
+  {
+    id: 'bomb-expert', name: bilingual('拆弹专家', 'Bomb Expert'),
+    description: bilingual('TNT不再爆炸，可以挖出换取50元', 'TNT is safe to haul and worth $50'),
+    detail: bilingual('TNT重量与50元金块相同；不影响主动使用炸药，TNT仍不属于黄金；与慢燃引信互斥。', 'TNT weighs the same as $50 gold, but is not gold. Your dynamite still works. Cannot be combined with Slow Fuse.'),
+  },
+  {
+    id: 'diamond-moles', name: bilingual('谁动了我的钻石', 'Diamond Moles'),
+    description: bilingual('每关额外出现1只携钻鼹鼠', 'Adds one diamond mole per stage'),
+    detail: bilingual('双人全队合计增加1只；与钻石收藏家和抛光剂兼容。', 'One extra mole per shared mine in co-op. Works with Diamond Collector and diamond polish.'),
+  },
+  {
+    id: 'moneybags', name: bilingual('钱袋子', 'Moneybags'),
+    description: bilingual('更多钱袋、必装现金，按钻石重量', 'More bags, always cash, at diamond weight'),
+    detail: bilingual('平均钱袋数量增加约30%，固定为钻石重量2；三叶草仍会提高现金奖励。', 'About 30% more bags on average, each fixed at diamond weight 2. Clover still improves the cash reward.'),
+  },
+  {
+    id: 'thief', name: bilingual('窃贼', 'Thief'),
+    description: bilingual('每次商店可免费偷取2件商品', 'Take two shop items for free each visit'),
+    detail: bilingual('只能选择本店已上架且未售出的商品；全队共用2次，正常扣库存，次数不跨店累积。', 'Choose stocked, unsold items only. The team shares two thefts per visit. Stock is consumed and unused thefts do not carry over.'),
+  },
+  {
+    id: 'risk-reward', name: bilingual('富贵险中求', 'Risk Reward'),
+    description: bilingual(`TNT附近的黄金、钻石价值增加${Math.round((RISK_VALUE_MULTIPLIER - 1) * 100)}%`, `Gold and diamonds near TNT are worth ${Math.round((RISK_VALUE_MULTIPLIER - 1) * 100)}% more`),
+    detail: bilingual(`仅TNT爆炸半径${RISK_RADIUS_MULTIPLIER * 100}%范围内生效；抓住时锁定加成，可与收藏家和抛光剂乘算；仍在矿场的安全TNT同样有效，鼹鼠本身的2元不加成。`, `Only within ${RISK_RADIUS_MULTIPLIER * 100}% of the TNT blast radius. Locks at capture and multiplies with collectors and polish. Unclaimed safe TNT also counts. The mole's $2 body value is not boosted.`),
+  },
+  {
+    id: 'time-bank', name: bilingual('时间银行', 'Time Bank'),
+    description: bilingual(`提前过关时，每剩余1秒获得${TIME_BANK_COINS_PER_SECOND}元`, `Finish early for $${TIME_BANK_COINS_PER_SECOND} per second left`),
+    detail: bilingual('按界面剩余整秒结算；主动收工或清空矿场提前过关均生效，不再延长下一关。', 'Uses the whole seconds shown on the timer. Applies when finishing early or clearing the mine after reaching the goal. Never extends the next stage.'),
+  },
+  {
+    id: 'airy-moles', name: bilingual('透气的鼹鼠', 'Airy Moles'),
+    description: bilingual('携钻鼹鼠更容易出现在矿场中上层', 'Diamond moles favor the upper and middle mine'),
+    detail: bilingual('将携钻鼹鼠的出生位置偏向中层和上层，也影响额外生成的鼹鼠；不再改变移动速度或回拉重量。', 'Shifts diamond mole spawns toward the middle and upper thirds, including extra moles. Speed and hauling weight stay unchanged.'),
+  },
+  {
+    id: 'slow-fuse', name: bilingual('慢燃引信', 'Slow Fuse'),
+    description: bilingual('触碰TNT后继续出钩，TNT延迟3秒爆炸', 'The claw passes through TNT, lighting a 3-second fuse'),
+    detail: bilingual('点燃后不会再次挡钩，暂停时引信也暂停；连锁爆炸不延迟，可配合富贵险中求，与拆弹专家互斥。', 'Lit TNT no longer blocks claws. Pausing freezes the fuse, but chain reactions detonate immediately. Works with Risk Reward; incompatible with Bomb Expert.'),
+  },
+  {
+    id: 'time-rush', name: bilingual('争分夺秒', 'Time Rush'),
+    description: bilingual('每关基础时间缩短20%，黄金和钻石价值增加30%', '20% less base time; gold and diamonds worth 30% more'),
+    detail: bilingual('不改变目标金币；收益可与收藏家、抛光剂及富贵险中求乘算，不加成鼹鼠本身的2元。', 'Goals stay unchanged. Multiplies with collectors, polish, and Risk Reward, but not the mole body value of $2.'),
+  },
+  {
+    id: 'regular-customer', name: bilingual('老主顾', 'Regular Customer'),
+    description: bilingual('每次商店必有大力水、三叶草和钻石抛光剂', 'Every shop stocks strength, clover, and diamond polish'),
+    detail: bilingual('价格与每店限购1件保持不变；可正常购买或用窃贼偷取，选到后立即影响本次商店。', 'Normal prices and one-unit limits still apply. Buy or steal the items as usual. Takes effect in the shop immediately after selection.'),
+  },
+  {
+    id: 'archaeologist', name: bilingual('考古学家', 'Archaeologist'),
+    description: bilingual('长骨价值变为140元，头骨价值变为400元', 'Long bones pay $140; skulls pay $400'),
+    detail: bilingual('重量保持不变；骨头仍不属于石头、黄金或钻石，不受石头书、收藏家或富贵险中求加成。', 'Weights stay unchanged. Bones are not rocks, gold, or diamonds, so the rock book, collectors, and Risk Reward do not apply.'),
+  },
+  {
+    id: 'clone', name: bilingual('克隆', 'Clone'),
+    description: bilingual('每关首次抓住的物品，最终收益翻倍', 'The first item caught each stage pays double'),
+    detail: bilingual('全队共享1次，抓住即锁定，需成功带回；现金与炸药翻倍，生力不叠加，炸毁也消耗本关机会。', 'One shared capture per stage, locked when caught and paid on collection. Cash and dynamite double; fast hauling does not stack. Destroying the cargo still spends the chance.'),
+  },
+  {
+    id: 'fossil-puzzle', name: bilingual('化石拼图', 'Fossil Puzzle'),
+    description: bilingual('每关集齐长骨和头骨，额外获得500元', 'Collect a long bone and a skull for an extra $500'),
+    detail: bilingual('两种骨头各收回1件即可，顺序不限，全队共享每关1次；骨头本身正常结算，拼图奖金不受克隆等售价加成。', 'Collect both types in either order, once per shared stage. Bones also pay their normal value. Clone and other value bonuses do not multiply the $500 reward.'),
+  },
+  {
+    id: 'gold-growth', name: bilingual('黄金生长', 'Gold Growth'),
+    description: bilingual('每10秒，随机一颗黄金长大一档', 'One random nugget grows a tier every 10 seconds'),
+    detail: bilingual('每次仅1颗：50→100→250→500元；从地下未抓住且未满档的黄金中等概率抽选，同一颗可多次长大，体积和重量同步增长；暂停不计时。', 'One nugget at a time: $50 to $100 to $250 to $500. Uniformly picks unclaimed, underground gold below the top tier. The same nugget can grow again, including size and weight. Paused time does not count.'),
+  },
+  {
+    id: 'buzzer-delivery', name: bilingual('压哨交货', 'Buzzer Delivery'),
+    description: bilingual('时间归零时，钩上已抓住的物品照常结算', 'Cargo already caught pays out when time runs out'),
+    detail: bilingual('无需先拉回地面，双人两只钩均有效；保留全部收益加成和钱袋奖励，空钩或已炸毁的货物不算，结算后再判断过关。', 'Applies to both co-op claws without returning to the surface. Keeps value bonuses and bag rewards. Empty hooks and destroyed cargo earn nothing. Pass or fail is decided after payout.'),
+  },
 ];
 
-export function getAbility(id: AbilityId, mode: Mode): Ability {
-  const ability = ABILITIES.find((entry) => entry.id === id);
-  if (!ability) throw new Error(`Unknown ability: ${id}`);
+export function getAbility(id: AbilityId, mode: Mode, language: Language = DEFAULT_LANGUAGE): Ability {
+  const definition = ABILITIES.find((entry) => entry.id === id);
+  if (!definition) throw new Error(`Unknown ability: ${id}`);
+  const ability: Ability = {
+    id, name: definition.name[language], description: definition.description[language], detail: definition.detail[language],
+  };
+  const bankLimit = (mode === 'coop' ? 40 : 60) * TIME_BANK_COINS_PER_SECOND;
   return id === 'time-bank'
-    ? { ...ability, detail: `${ability.detail}${mode === 'coop' ? '双人共享奖励，' : ''}基础时限最多${(mode === 'coop' ? 40 : 60) * TIME_BANK_COINS_PER_SECOND}元。` }
+    ? { ...ability, detail: ability.detail + bilingual(
+      `${mode === 'coop' ? '双人共享奖励，' : ''}基础时限最多${bankLimit}元。`,
+      ` ${mode === 'coop' ? 'Shared in co-op. ' : ''}Up to $${bankLimit.toLocaleString('en-US')} at the base time limit.`,
+    )[language] }
     : ability;
 }
 

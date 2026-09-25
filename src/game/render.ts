@@ -6,6 +6,8 @@ import type { Viewport } from './viewport';
 import { createRandom } from './random';
 import { CLONE_REWARD_MULTIPLIER, GOLD_GROWTH_INTERVAL, SLOW_FUSE_SECONDS, WIDE_CLAW_MULTIPLIER } from './abilities';
 import { interpolatedReelDistance } from './hauling';
+import { DEFAULT_LANGUAGE, localize } from './i18n';
+import type { Language } from './i18n';
 
 type Context = CanvasRenderingContext2D;
 
@@ -885,7 +887,7 @@ export class GameRenderer {
     }
   }
 
-  draw(state: GameState, realTime: number): void {
+  draw(state: GameState, realTime: number, language: Language = DEFAULT_LANGUAGE): void {
     const c = this.c;
     if (this.terrainLevel !== state.level) {
       const background = this.terrainCanvas.getContext('2d');
@@ -1001,6 +1003,7 @@ export class GameRenderer {
     }
     c.globalAlpha = 1;
     for (const text of state.texts) {
+      const label = localize(text.text, language);
       c.save();
       c.translate(text.x, text.y);
       c.scale(1 / this.viewport.stretchX, 1 / this.viewport.stretchY);
@@ -1010,9 +1013,9 @@ export class GameRenderer {
       c.lineJoin = 'round';
       c.strokeStyle = '#fff3d2';
       c.lineWidth = 4;
-      c.strokeText(text.text, 0, 0);
+      c.strokeText(label, 0, 0);
       c.fillStyle = text.color;
-      c.fillText(text.text, 0, 0);
+      c.fillText(label, 0, 0);
       c.restore();
     }
   }

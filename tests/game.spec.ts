@@ -417,3 +417,93 @@ test('mobile retains working two-player touch controls without text panels or pa
   await expect(page.locator('h1, h2, h3, p, footer')).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('mobile-paused.png'), animations: 'disabled' });
 });
+
+test.describe('touchscreen virtual controls', () => {
+  test.use({ hasTouch: true });
+
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 932, height: 430 },
+    { width: 1024, height: 768 },
+    { width: 1366, height: 1024 },
+  ]) {
+    for (const coop of [false, true]) {
+      test(`${coop ? 'co-op' : 'solo'} can launch and use dynamite by touch at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+        await page.setViewportSize(viewport);
+        await openCargoFixture(page, coop);
+        expect(await page.evaluate(() => matchMedia('(any-pointer: coarse)').matches)).toBe(true);
+        const buttons = page.locator('.touch-button:visible');
+        await expect(buttons).toHaveCount(coop ? 4 : 2);
+        for (const button of await buttons.all()) {
+          const bounds = await button.boundingBox();
+          if (!bounds) throw new Error('A virtual control is missing.');
+          expect(bounds.width).toBeGreaterThanOrEqual(44);
+          expect(bounds.height).toBeGreaterThanOrEqual(44);
+          expect(bounds.x).toBeGreaterThanOrEqual(15);
+          expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width - 15);
+          expect(bounds.y + bounds.height).toBeLessThanOrEqual(viewport.height - 17);
+        }
+        const before = await readGame(page);
+        for (const player of before.players) {
+          await page.getByRole('button', { name: `玩家${player.id}下钩`, exact: true }).tap();
+          await expect(page.locator(`[data-player="${player.id}"]`)).toHaveAttribute('data-hook-phase', 'extending');
+        }
+        await page.clock.runFor(500);
+        const loaded = await readGame(page);
+        expect(loaded.players.every((player) => player.cargoId !== null)).toBe(true);
+        const bomber = coop ? 2 : 1;
+        const cargoId = loaded.players[bomber - 1].cargoId;
+        await page.getByRole('button', { name: `玩家${bomber}使用炸药`, exact: true }).tap();
+        const after = await readGame(page);
+        expect(after.dynamite).toBe(before.dynamite - 1);
+        expect(after.players[bomber - 1].cargoId).toBeNull();
+        expect(after.entities.find((entity) => entity.id === cargoId)?.active).toBe(false);
+        expect(after.score).toBe(before.score);
+        if (coop) expect(after.players[0].cargoId).toBe(loaded.players[0].cargoId);
+        await page.getByRole('button', { name: `玩家${bomber}使用炸药`, exact: true }).tap();
+        expect((await readGame(page)).dynamite).toBe(0);
+        await expect(page.locator('.warning-icon')).toHaveAttribute('aria-label', /没有炸药/);
+
+        await page.getByRole('button', { name: '暂停游戏', exact: true }).tap();
+        await expect(page.locator('.touch-button:visible')).toHaveCount(0);
+        for (const button of await page.locator('.touch-button').all()) await expect(button).toBeDisabled();
+        await page.getByRole('button', { name: '继续挖矿', exact: true }).tap();
+        await expect(page.locator('.touch-button:visible')).toHaveCount(coop ? 4 : 2);
+      });
+    }
+  }
+
+  test('tablet rotation retains the virtual keys and English touch actions', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await openCargoFixture(page);
+    const before = await readGame(page);
+    for (const viewport of [{ width: 1024, height: 768 }, { width: 1366, height: 1024 }]) {
+      await page.setViewportSize(viewport);
+      await expect(page.locator('.touch-button:visible')).toHaveCount(2);
+      expect(await readGame(page)).toMatchObject({ phase: 'playing', level: before.level, score: before.score, abilities: before.abilities });
+    }
+    await page.getByRole('button', { name: 'Switch to English', exact: true }).tap();
+    await page.getByRole('button', { name: 'Player 1: launch claw', exact: true }).tap();
+    await page.clock.runFor(500);
+    expect((await readGame(page)).players[0].cargoId).not.toBeNull();
+    await page.getByRole('button', { name: 'Player 1: use dynamite', exact: true }).tap();
+    expect((await readGame(page)).dynamite).toBe(0);
+    expect((await readGame(page)).players[0].cargoId).toBeNull();
+    await page.screenshot({ path: testInfo.outputPath('tablet-virtual-controls.png'), animations: 'disabled' });
+  });
+});
+
+test('mouse-only desktops keep keyboard controls and the existing narrow-window fallback', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1050 });
+  await openCargoFixture(page);
+  expect(await page.evaluate(() => matchMedia('(any-pointer: coarse)').matches)).toBe(false);
+  await expect(page.locator('.touch-button:visible')).toHaveCount(0);
+  await page.keyboard.press('ArrowDown');
+  await page.clock.runFor(500);
+  expect((await readGame(page)).players[0].cargoId).not.toBeNull();
+  await page.keyboard.press('ArrowUp');
+  expect((await readGame(page)).dynamite).toBe(0);
+  expect((await readGame(page)).players[0].cargoId).toBeNull();
+  await page.setViewportSize({ width: 800, height: 900 });
+  await expect(page.locator('.touch-button:visible')).toHaveCount(2);
+});

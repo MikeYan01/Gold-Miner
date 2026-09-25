@@ -1,9 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import { GameEngine } from '../game/engine';
 import { GameRenderer } from '../game/render';
+import { useLanguage } from './Language';
 
 export function MineCanvas({ engine, canvasRef }: { engine: GameEngine; canvasRef: RefObject<HTMLCanvasElement | null> }) {
+  const { language, t } = useLanguage();
+  const languageRef = useRef(language);
+  useLayoutEffect(() => { languageRef.current = language; }, [language]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -12,7 +17,7 @@ export function MineCanvas({ engine, canvasRef }: { engine: GameEngine; canvasRe
       if (canvas.clientWidth === 0 || canvas.clientHeight === 0) return;
       renderer.resize();
       engine.setViewport(canvas.width, canvas.height);
-      renderer.draw(engine.state, performance.now() / 1000);
+      renderer.draw(engine.state, performance.now() / 1000, languageRef.current);
     };
     resize();
     const observer = new ResizeObserver(resize);
@@ -34,7 +39,7 @@ export function MineCanvas({ engine, canvasRef }: { engine: GameEngine; canvasRe
         remaining -= step;
       }
       previous = now;
-      renderer.draw(engine.state, now / 1000);
+      renderer.draw(engine.state, now / 1000, languageRef.current);
       frame = requestAnimationFrame(animate);
     };
     frame = requestAnimationFrame(animate);
@@ -51,10 +56,10 @@ export function MineCanvas({ engine, canvasRef }: { engine: GameEngine; canvasRe
       className="mine-canvas"
       tabIndex={-1}
       role="img"
-      aria-label="黄金矿工矿场：抓钩在地面摆动，下方埋藏黄金、石头和宝藏。"
+      aria-label={t('黄金矿工矿场：抓钩在地面摆动，下方埋藏黄金、石头和宝藏。', 'Gold Miner mine: the claw swings above gold, rocks, and buried treasure.')}
       aria-keyshortcuts={engine.state.mode === 'coop' ? 'S W ArrowDown ArrowUp' : 'ArrowDown ArrowUp'}
     >
-      你的浏览器不支持 Canvas。请使用新版 Chrome、Edge、Firefox 或 Safari。
+      {t('你的浏览器不支持 Canvas。请使用新版 Chrome、Edge、Firefox 或 Safari。', 'Your browser does not support Canvas. Please use an updated Chrome, Edge, Firefox, or Safari.')}
     </canvas>
   );
 }

@@ -94,7 +94,8 @@ describe('shared target curve and endless metadata', () => {
       expect(solo.duration).toBe(60);
       expect(coop.duration).toBe(40);
       expect(solo.name).toBe(LEVELS[originalCategory(level) - 1].name);
-      expect(solo.hint.length).toBeGreaterThan(0);
+      expect(solo.hint['zh-CN'].length).toBeGreaterThan(0);
+      expect(solo.hint.en.length).toBeGreaterThan(0);
       if (level > 1) expect(solo.target).toBeGreaterThan(levelTarget(level - 1));
     }
   });

@@ -1306,7 +1306,7 @@ describe('original prices and shared theft', () => {
     expect(engine.buy('strength')).toBe(true);
     engine.state.score = 0;
     expect(engine.buy('polish')).toBe(false);
-    expect(engine.state.notice?.text).toContain('金币不够');
+    expect(engine.state.notice?.text['zh-CN']).toContain('金币不够');
     expect(engine.steal('polish')).toBe(true);
     const ordinary = start([]);
     openShop(ordinary);
