@@ -255,6 +255,8 @@ for (const [id, name, effect, detail, mode, duration] of [
   ['rock-crusher', '碎石机', '粉碎沿途所有石头', '双人均生效', 'coop', 40],
   ['right-angle-turn', '直角转弯', '钩子转弯90°', '偏左向右转，偏右向左转', 'solo', 60],
   ['right-angle-turn', '直角转弯', '钩子转弯90°', '每钩限1次', 'coop', 40],
+  ['time-rewind', '时光倒流', '每关任意时刻，可重新开始本关1次', '双人共享1次，下关重置', 'solo', 60],
+  ['time-rewind', '时光倒流', '每关任意时刻，可重新开始本关1次', '双人共享1次，下关重置', 'coop', 40],
 ] as const) {
   test(`${id} has its own selectable artwork and complete ${mode} descriptions`, async ({ page }, testInfo) => {
     if (mode === 'coop' || id === 'airy-moles' || id === 'archaeologist') {
@@ -610,7 +612,7 @@ test('keyboard-focused tooltips show full ability details and stay inside a narr
 });
 
 test('touch users can tap an owned icon and dismiss its custom tooltip by tapping outside', async ({ browser }) => {
-  const context = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } });
+  const context = await browser.newContext({ hasTouch: true, viewport: { width: 844, height: 390 } });
   try {
     const page = await context.newPage();
     await freeze(page, 'http://127.0.0.1:4173/tests/game.html?fixture=abilities&scenario=empowered-mine');
@@ -618,7 +620,7 @@ test('touch users can tap an owned icon and dismiss its custom tooltip by tappin
     await page.getByRole('button', { name: '查看能力：大力', exact: true }).tap();
     await expect(page.getByRole('tooltip').locator('strong')).toHaveText('大力');
     await expect(page.getByRole('tooltip')).toContainText('65%');
-    await page.locator('.mine-canvas').tap({ position: { x: 300, y: 500 } });
+    await page.locator('.mine-canvas').tap({ position: { x: 500, y: 220 } });
     await expect(page.getByRole('tooltip')).toHaveCount(0);
   } finally {
     await context.close();

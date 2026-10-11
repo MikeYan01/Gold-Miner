@@ -6,7 +6,7 @@ import type { AbilityId, PlayerId, ShopItemId } from '../game/types';
 export type IconName =
   | 'pickaxe' | 'sound' | 'muted' | 'pause' | 'play' | 'arrow' | 'home'
   | 'coin' | 'clock' | 'target' | 'trophy' | 'close' | 'bomb'
-  | 'check' | 'refresh' | 'cart' | 'hand' | 'turn' | 'music' | 'music-muted';
+  | 'check' | 'refresh' | 'cart' | 'hand' | 'turn' | 'rewind' | 'music' | 'music-muted';
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, ReactNode> = {
@@ -28,6 +28,7 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
     bomb: <><circle cx="10" cy="14" r="7" /><path d="m14 8 2-3 3 1m0 0 2-3m-1 5h3M17 3V1" /><path d="M6 12a4 4 0 0 1 2-2" /></>,
     check: <path d="m5 12 4 4L19 6" />,
     refresh: <><path d="M20 7v5h-5M4 17v-5h5" /><path d="M6.5 6A8 8 0 0 1 20 12M4 12a8 8 0 0 0 13.5 6" /></>,
+    rewind: <><path d="M3 3v5h5M3 12a9 9 0 1 0 9-9c-3 0-5.2 1.1-7 3L3 8" /><path d="M12 7v5l4 2" /></>,
     cart: <><path d="M2 3h3l3 13h11l3-9H6" /><circle cx="9" cy="21" r="1" /><circle cx="18" cy="21" r="1" /></>,
     hand: <><path d="M6 13V6a2 2 0 0 1 4 0v5-7a2 2 0 0 1 4 0v7-5a2 2 0 0 1 4 0v7-3a2 2 0 0 1 4 0v5c0 5-3 8-8 8-3 0-5-2-7-4l-4-5a2 2 0 0 1 3-2l3 2" /></>,
   };

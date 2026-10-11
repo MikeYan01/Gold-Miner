@@ -47,6 +47,10 @@ describe('bilingual game text', () => {
     expect(getAbility('right-angle-turn', 'solo', 'en').description).toContain('90°');
     expect(getAbility('right-angle-turn', 'solo', 'en').detail).toContain('Left-leaning shots turn right; right-leaning shots turn left');
     expect(getAbility('right-angle-turn', 'solo', 'en').detail).toContain('Once per shot');
+    expect(getAbility('time-rewind', 'solo', 'en').description).toContain('once, at any time');
+    expect(getAbility('time-rewind', 'solo').description).toContain('（点击右上方时间按钮）');
+    expect(getAbility('time-rewind', 'solo', 'en').description).toContain('(tap the top-right time button)');
+    expect(getAbility('time-rewind', 'coop', 'en').detail).toContain('Co-op shares one use');
     expect(getAbility('diamond-vein', 'solo', 'en').description).toContain('20%');
     expect(getAbility('diamond-vein', 'solo', 'en').detail).toContain('One roll at capture');
     expect(getAbility('time-rush', 'solo', 'en').description).toContain('40%');

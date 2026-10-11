@@ -42,6 +42,7 @@ svg { display: block; flex-shrink: 0; }
 .large-button > svg { width: 39px; height: 39px; }
 .game-toolbar { position: absolute; top: 16px; right: 20px; display: flex; gap: 9px; z-index: 5; }
 .phase-draft .game-toolbar { visibility: hidden; }
+.rewind-button:disabled { opacity: .45; }
 .finish-button { background: linear-gradient(#e1ee93, #aeca56); color: #40600c; border-color: #627a28; }
 .inventory { position: absolute; top: 17px; left: 23px; display: flex; gap: 6px; align-items: center; z-index: 3; pointer-events: none; }
 .dynamite-counter { display: flex; align-items: center; gap: 7px; height: 38px; padding: 4px 8px; background: #f9df98d9; border: 1.5px solid #af8237; border-radius: 6px; color: #7e3d1a; }
@@ -124,6 +125,17 @@ svg { display: block; flex-shrink: 0; }
 .ability-card-emblem { display: block; flex-shrink: 0; width: 132px; height: 132px; border-radius: 50%; background: radial-gradient(#fff9df, #e5c37e66); }
 .ability-card > strong { font-size: 19px; font-weight: 800; line-height: 1.4; letter-spacing: .5px; text-wrap: balance; overflow-wrap: anywhere; }
 .ability-card-description { font-size: 13px; line-height: 1.8; color: #967346; flex: 1; }
+.rotate-notice { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; width: 100%; max-width: none; height: 100dvh; max-height: none; margin: 0; padding: max(32px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left)); border: 0; color: #5e401b; background: radial-gradient(circle at 50% 42%, #fff3c9, #e4c27f); text-align: center; }
+.rotate-notice-device { position: relative; width: 48px; height: 76px; margin-bottom: 20px; border: 3px solid #805117; border-radius: 8px; transform: rotate(-90deg); animation: rotate-device .9s ease-in-out both; }
+.rotate-notice-device::after { content: ''; position: absolute; left: 50%; bottom: 5px; width: 12px; height: 3px; border-radius: 2px; background: #805117; transform: translateX(-50%); }
+.rotate-notice > strong { font-size: 24px; }
+.rotate-notice > span:not(.rotate-notice-device) { max-width: 300px; font-size: 15px; line-height: 1.7; }
+.rotate-notice .language-switch { width: 55px; height: 48px; margin-top: 8px; font-size: 14px; }
+
+@keyframes rotate-device {
+  from { transform: rotate(0); }
+  to { transform: rotate(-90deg); }
+}
 
 @media (any-pointer: coarse), (max-width: 850px) {
   .touch-controls { right: max(15px, env(safe-area-inset-right)); bottom: max(17px, env(safe-area-inset-bottom)); left: max(15px, env(safe-area-inset-left)); }
@@ -172,6 +184,7 @@ svg { display: block; flex-shrink: 0; }
   .small-button { width: 36px; height: 35px; padding: 6px; }
   .game-toolbar .language-switch { position: absolute; top: 42px; right: 86px; }
   .game-toolbar .music-toggle { position: absolute; top: 42px; right: 43px; }
+  .game-toolbar .rewind-button { position: absolute; top: 42px; right: 0; }
   .language-switch { padding-inline: 4px; }
   .small-button > svg { width: 20px; height: 20px; }
   .inventory { gap: 1px; }

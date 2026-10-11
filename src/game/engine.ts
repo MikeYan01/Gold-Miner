@@ -240,6 +240,7 @@ function initialState(mode: Mode, phase: 'menu' | 'draft', originY = ORIGIN_Y): 
     target: info.target,
     timeLeft: info.duration,
     clonedEntityId: null,
+    rewindUsed: false,
     elapsed: 0,
     dynamite: ORIGINAL_STARTING_DYNAMITE,
     abilities: [],
@@ -273,6 +274,7 @@ export class GameEngine {
   private fxRandom = createRandom(2026);
   private lastCrushSoundAt = -Infinity;
   private viewport: Viewport = DEFAULT_VIEWPORT;
+  private levelStartState: GameState | null = null;
 
   constructor(private readonly random: () => number = Math.random) {}
 
@@ -330,6 +332,7 @@ export class GameEngine {
 
   start(mode: Mode): void {
     this.state = initialState(mode, 'draft', this.viewport.originY);
+    this.levelStartState = null;
     this.fxRandom = createRandom(2026);
     this.beginDraft(1);
   }
@@ -365,6 +368,7 @@ export class GameEngine {
 
   menu(): void {
     this.state = initialState(this.state.mode, 'menu', this.viewport.originY);
+    this.levelStartState = null;
     this.publish();
   }
 
@@ -378,6 +382,27 @@ export class GameEngine {
     if (this.state.phase !== 'paused') return;
     this.state.phase = 'playing';
     this.publish();
+  }
+
+  rewind(): boolean {
+    const state = this.state;
+    if (state.phase !== 'playing' && state.phase !== 'paused') return false;
+    if (!state.abilities.includes('time-rewind') || state.rewindUsed) {
+      this.notify(state.rewindUsed
+        ? bilingual('本关的时光倒流机会已用完。', 'Time Rewind has already been used this stage.')
+        : bilingual('本局没有时光倒流能力。', 'Time Rewind has not been acquired this run.'), 'warning');
+      this.sound('denied');
+      return false;
+    }
+    if (!this.levelStartState) throw new Error('Time Rewind is missing its stage-start snapshot.');
+    this.state = structuredClone(this.levelStartState);
+    this.state.rewindUsed = true;
+    for (const player of this.state.players) player.origin.y = this.viewport.originY;
+    this.lastCrushSoundAt = -Infinity;
+    this.publishElapsed = 0;
+    this.notify(bilingual('时光倒流！已回到本关开始。', 'Time rewound! Back to the start of this stage.'), 'good');
+    this.sound('buy');
+    return true;
   }
 
   action(playerId: PlayerId, action: 'launch' | 'bomb'): void {
@@ -878,6 +903,7 @@ export class GameEngine {
     state.timeLeft = info.duration * (state.abilities.includes('time-rush') ? RUSH_DURATION_MULTIPLIER : 1)
       + travelLightBonus;
     state.clonedEntityId = null;
+    state.rewindUsed = false;
     state.elapsed = 0;
     this.lastCrushSoundAt = -Infinity;
     state.bagStrength = false;
@@ -894,7 +920,9 @@ export class GameEngine {
     state.particles = [];
     state.texts = [];
     state.result = null;
+    state.notice = null;
     state.phase = 'playing';
+    this.levelStartState = state.abilities.includes('time-rewind') ? structuredClone(state) : null;
     this.notify(info.hint);
   }
 }

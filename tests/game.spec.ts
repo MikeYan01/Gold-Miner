@@ -370,7 +370,7 @@ for (const [mode, seconds] of [['solo', 60], ['coop', 40]] as const) {
     await expect(page.getByRole('region', { name: '挑战结束' })).toBeVisible();
     await page.getByRole('button', { name: '重新挑战' }).click();
     await expect(page.getByRole('dialog', { name: '选择能力' })).toBeVisible();
-    await page.locator('.ability-card').first().click();
+    await page.locator('.ability-card:not([data-ability="time-rush"])').first().click();
     await expect(page.getByTestId('timer')).toHaveText(String(seconds));
     await expect(page.getByTestId('score')).toHaveText('$0');
     await expect(page.locator('[data-player="1"]')).toHaveAttribute('data-hook-phase', 'swinging');
@@ -402,7 +402,7 @@ test('keeps disabled background music off in the draft and mine when sound effec
   await expect(page.locator('html')).not.toHaveAttribute('data-audio-notes');
 });
 
-test('mobile retains working two-player touch controls without text panels or page overflow', async ({ page }, testInfo) => {
+test('narrow desktop windows retain working two-player virtual controls without text panels or page overflow', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await launchMuted(page, true);
   await expectSceneFillsStage(page);
@@ -425,7 +425,7 @@ test.describe('touchscreen virtual controls', () => {
   test.use({ hasTouch: true });
 
   for (const viewport of [
-    { width: 390, height: 844 },
+    { width: 844, height: 390 },
     { width: 932, height: 430 },
     { width: 1024, height: 768 },
     { width: 1366, height: 1024 },
@@ -478,7 +478,12 @@ test.describe('touchscreen virtual controls', () => {
 
   test('tablet rotation retains the virtual keys and English touch actions', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 768, height: 1024 });
-    await openCargoFixture(page);
+    await openFixture(page, '/tests/game.html?fixture=abilities&scenario=keyboard-cargo');
+    await expect(page.getByRole('dialog', { name: '请横屏游玩', exact: true })).toBeVisible();
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.getByRole('button', { name: '关闭音效' }).tap();
+    await page.getByRole('button', { name: '关闭背景音乐' }).tap();
+    await page.getByRole('button', { name: '继续挖矿' }).tap();
     const before = await readGame(page);
     for (const viewport of [{ width: 1024, height: 768 }, { width: 1366, height: 1024 }]) {
       await page.setViewportSize(viewport);

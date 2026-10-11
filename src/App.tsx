@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Avatar, Icon, ItemArt, Merchant } from './components/Art';
 import type { IconName } from './components/Art';
 import { MineCanvas } from './components/MineCanvas';
@@ -19,13 +19,14 @@ const compactAmount = new Intl.NumberFormat('en-US', { notation: 'compact', maxi
 const hudMoney = (amount: number) => amount >= 100_000 ? `$${compactAmount.format(amount)}` : money(amount);
 const padded = (amount: number) => amount.toString().padStart(2, '0');
 
-function ActionButton({ icon, label, onClick, className = '' }: {
+function ActionButton({ icon, label, onClick, className = '', disabled = false }: {
   icon: IconName;
   label: string;
   onClick: () => void;
   className?: string;
+  disabled?: boolean;
 }) {
-  return <button className={`game-button ${className}`} aria-label={label} title={label} onClick={onClick}><Icon name={icon} size={28} /></button>;
+  return <button className={`game-button ${className}`} aria-label={label} title={label} onClick={onClick} disabled={disabled}><Icon name={icon} size={28} /></button>;
 }
 
 function Hud({ state }: { state: GameState }) {
@@ -157,6 +158,31 @@ function TouchControls({ state, onAction }: { state: GameState; onAction: (playe
   );
 }
 
+function RotateDeviceNotice() {
+  const { t } = useLanguage();
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    dialog?.showModal();
+    return () => dialog?.close();
+  }, []);
+  return (
+    <dialog
+      ref={dialogRef}
+      className="rotate-notice"
+      aria-labelledby="rotate-notice-title"
+      aria-describedby="rotate-notice-description"
+      onCancel={(event) => event.preventDefault()}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      <span className="rotate-notice-device" aria-hidden="true" />
+      <strong id="rotate-notice-title">{t('请横屏游玩', 'Rotate to play')}</strong>
+      <span id="rotate-notice-description">{t('请将手机或平板转为横屏后进入游戏。', 'Turn your phone or tablet sideways to enter the game.')}</span>
+      <LanguageSwitch />
+    </dialog>
+  );
+}
+
 export default function App({ engine }: { engine: GameEngine }) {
   useSyncExternalStore(engine.subscribe, engine.getSnapshot);
   const state = engine.state;
@@ -166,9 +192,21 @@ export default function App({ engine }: { engine: GameEngine }) {
   const [audioWarning, setAudioWarning] = useState<LocalizedText | null>(null);
   const [audio] = useState(() => new GameAudio(saved.preferences.sound, saved.preferences.music, setAudioWarning));
   const [pageHidden, setPageHidden] = useState(document.hidden);
+  const [portraitQuery] = useState(() => window.matchMedia('(any-pointer: coarse) and (orientation: portrait)'));
+  const [portraitBlocked, setPortraitBlocked] = useState(() => portraitQuery.matches);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const language = preferences.language;
   const t = getTranslator(language);
+
+  useEffect(() => {
+    const update = () => setPortraitBlocked(portraitQuery.matches);
+    portraitQuery.addEventListener('change', update);
+    update();
+    return () => portraitQuery.removeEventListener('change', update);
+  }, [portraitQuery]);
+  useLayoutEffect(() => {
+    if (portraitBlocked) engine.pause();
+  }, [engine, portraitBlocked, state.phase]);
 
   useEffect(() => {
     const text = getTranslator(language);
@@ -181,8 +219,8 @@ export default function App({ engine }: { engine: GameEngine }) {
   useEffect(() => () => audio.dispose(), [audio]);
   useEffect(() => {
     audio.setScene(state.phase === 'playing' || state.phase === 'paused' ? 'game' : state.phase === 'shop' ? 'shop' : 'menu');
-    audio.setPaused(pageHidden || state.phase === 'paused');
-  }, [audio, state.phase, pageHidden]);
+    audio.setPaused(pageHidden || portraitBlocked || state.phase === 'paused');
+  }, [audio, state.phase, pageHidden, portraitBlocked]);
   useEffect(() => {
     const warning = savePreferences(preferences);
     if (warning) setStorageWarning(warning);
@@ -196,18 +234,21 @@ export default function App({ engine }: { engine: GameEngine }) {
   }, [state, state.phase, state.mode, state.score]);
 
   const start = useCallback((mode: Mode) => {
+    if (portraitQuery.matches) return;
     void audio.unlock();
     engine.start(mode);
     canvasRef.current?.focus({ preventScroll: true });
-  }, [audio, engine]);
+  }, [audio, engine, portraitQuery]);
 
   const onAction = useCallback((player: PlayerId, action: 'launch' | 'bomb') => {
+    if (portraitQuery.matches) return;
     void audio.unlock();
     engine.action(player, action);
-  }, [engine, audio]);
+  }, [engine, audio, portraitQuery]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (portraitQuery.matches) return;
       if (event.altKey || event.ctrlKey || event.metaKey) return;
       const target = event.target;
       if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
@@ -239,7 +280,7 @@ export default function App({ engine }: { engine: GameEngine }) {
       window.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [engine, onAction, start]);
+  }, [engine, onAction, start, portraitQuery]);
 
   const toggleSound = () => {
     const enabled = !preferences.sound;
@@ -256,7 +297,7 @@ export default function App({ engine }: { engine: GameEngine }) {
 
   return (
     <LanguageContext.Provider value={{ language, onChange: (next) => setPreferences((previous) => ({ ...previous, language: next })) }}>
-      <main className={`game-frame phase-${state.phase}`}>
+      <main className={`game-frame phase-${state.phase}`} inert={portraitBlocked}>
         <Hud state={state} />
         <div className="game-stage">
           {state.phase === 'shop' ? <Shop engine={engine} /> : <MineCanvas engine={engine} canvasRef={canvasRef} />}
@@ -264,7 +305,10 @@ export default function App({ engine }: { engine: GameEngine }) {
             <LanguageSwitch />
             <button className="game-button small-button music-toggle" onClick={toggleMusic} aria-label={preferences.music ? t('关闭背景音乐', 'Mute background music') : t('开启背景音乐', 'Enable background music')} aria-pressed={preferences.music} title={preferences.music ? t('关闭背景音乐', 'Mute background music') : t('开启背景音乐', 'Enable background music')}><Icon name={preferences.music ? 'music' : 'music-muted'} size={23} /></button>
             <button className="game-button small-button" onClick={toggleSound} aria-label={preferences.sound ? t('关闭音效', 'Mute sound effects') : t('开启音效', 'Enable sound effects')} aria-pressed={preferences.sound} title={preferences.sound ? t('关闭音效', 'Mute sound effects') : t('开启音效', 'Enable sound effects')}><Icon name={preferences.sound ? 'sound' : 'muted'} size={23} /></button>
-            {(state.phase === 'playing' || state.phase === 'paused') && <ActionButton icon={state.phase === 'playing' ? 'pause' : 'play'} label={state.phase === 'playing' ? t('暂停游戏', 'Pause game') : t('继续游戏', 'Resume game')} className="small-button" onClick={() => state.phase === 'playing' ? engine.pause() : engine.resume()} />}
+            {(state.phase === 'playing' || state.phase === 'paused') && <>
+              {state.abilities.includes('time-rewind') && <ActionButton icon="rewind" label={state.rewindUsed ? t('时光倒流：本关已使用', 'Time Rewind: used this stage') : t('时光倒流：重新开始本关', 'Time Rewind: restart this stage')} className="small-button rewind-button" disabled={state.rewindUsed} onClick={() => engine.rewind()} />}
+              <ActionButton icon={state.phase === 'playing' ? 'pause' : 'play'} label={state.phase === 'playing' ? t('暂停游戏', 'Pause game') : t('继续游戏', 'Resume game')} className="small-button" onClick={() => state.phase === 'playing' ? engine.pause() : engine.resume()} />
+            </>}
             {state.phase === 'playing' && state.score >= state.target && <ActionButton icon="check" label={t('提前收工', 'Finish early')} className="small-button finish-button" onClick={() => engine.finishEarly()} />}
           </div>
           <div className="inventory" aria-label={t('共享背包', 'Shared inventory')}>
@@ -274,7 +318,7 @@ export default function App({ engine }: { engine: GameEngine }) {
           </div>
           {state.abilities.length > 0 && <AbilityRack abilities={state.abilities} mode={state.mode} />}
           {state.phase === 'menu' && <StartMenu onStart={start} />}
-          {state.phase === 'draft' && <AbilityDraft engine={engine} />}
+          {state.phase === 'draft' && !portraitBlocked && <AbilityDraft engine={engine} />}
           {state.phase === 'paused' && <Pause engine={engine} />}
           {['results', 'gameover'].includes(state.phase) && <Results engine={engine} onStart={start} />}
           <TouchControls state={state} onAction={onAction} />
@@ -282,6 +326,7 @@ export default function App({ engine }: { engine: GameEngine }) {
           {state.notice && <span className="sr-only" role="status">{localize(state.notice.text, language)}</span>}
         </div>
       </main>
+      {portraitBlocked && <RotateDeviceNotice />}
     </LanguageContext.Provider>
   );
 }

@@ -25,8 +25,8 @@ function seededMenu(params: URLSearchParams): GameEngine {
   const seed = Number(params.get('seed') ?? 523_260_012);
   if (!Number.isSafeInteger(seed)) throw new Error('Invalid fixture seed.');
   const random = createRandom(seed);
-  const draftRandom = createRandom(47);
-  // Keep seeded mines and prices independent of the size of the ability pool.
+  const draftRandom = createRandom(3);
+  // The opening draft includes Aim Line; mine/shop draws stay independent of the ability pool.
   const engine: GameEngine = new GameEngine(() => engine.state.draftLevel === null ? random() : draftRandom());
   return engine;
 }

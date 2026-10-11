@@ -26,7 +26,8 @@ export type AbilityId =
   | 'gold-growth'
   | 'travel-light'
   | 'rock-crusher'
-  | 'right-angle-turn';
+  | 'right-angle-turn'
+  | 'time-rewind';
 export type PlayerId = 1 | 2;
 export type HookPhase = 'swinging' | 'extending' | 'retracting';
 export type EntityKind =
@@ -150,6 +151,7 @@ export interface GameState {
   target: number;
   timeLeft: number;
   clonedEntityId: number | null;
+  rewindUsed: boolean;
   elapsed: number;
   dynamite: number;
   abilities: AbilityId[];

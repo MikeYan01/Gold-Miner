@@ -314,3 +314,37 @@ test('music-only playback skips sample downloads, pauses with the game and hidde
   });
   expect((await readAudio(page)).notes).toBe(0);
 });
+
+test.describe('mobile landscape audio', () => {
+  test.use({ hasTouch: true });
+
+  test('portrait rotation silences gameplay audio and keeps it paused until explicit landscape resume', async ({ page }) => {
+    await page.setViewportSize({ width: 932, height: 430 });
+    await monitorAudio(page);
+    await openFixture(page);
+    await page.getByRole('button', { name: '开始单人游戏', exact: true }).tap();
+    await expect.poll(async () => (await readAudio(page)).decoded.length).toBe(10);
+    await page.getByRole('button', { name: '选择能力：射线', exact: true }).tap();
+    await page.clock.runFor(620);
+    await page.keyboard.press('ArrowDown');
+    await page.clock.runFor(32);
+    const playing = await readAudio(page);
+    expect(playing.played.length).toBeGreaterThan(0);
+    expect(playing.notes).toBeGreaterThan(0);
+    await page.setViewportSize({ width: 430, height: 932 });
+    await expect(page.getByRole('dialog', { name: '请横屏游玩', exact: true })).toBeVisible();
+    const paused = await readAudio(page);
+    expect(paused.stopped).toBeGreaterThan(playing.stopped);
+    await page.clock.runFor(1500);
+    const portrait = await readAudio(page);
+    expect(portrait.played).toEqual(paused.played);
+    expect(portrait.notes).toBe(paused.notes);
+    await page.setViewportSize({ width: 932, height: 430 });
+    await expect(page.getByRole('group', { name: '游戏已暂停', exact: true })).toBeVisible();
+    await page.clock.runFor(620);
+    expect((await readAudio(page)).notes).toBe(paused.notes);
+    await page.getByRole('button', { name: '继续挖矿', exact: true }).tap();
+    await page.clock.runFor(620);
+    expect((await readAudio(page)).notes).toBeGreaterThan(paused.notes);
+  });
+});

@@ -155,6 +155,11 @@ export const ABILITIES: readonly AbilityDefinition[] = [
     description: bilingual('出钩后再按一次下钩键，钩子转弯90°', 'Press launch again mid-shot to turn the claw 90°'),
     detail: bilingual('每钩限1次，抓住物品或开始回收后不可转弯。偏左向右转，偏右向左转，完全竖直时随机左右；沿原路径收回，搭配射线可实时预览。', 'Once per shot, before capture or retraction. Left-leaning shots turn right; right-leaning shots turn left. Exactly vertical shots randomly turn left or right. Returns along the same path. Aim Line previews the turn live.'),
   },
+  {
+    id: 'time-rewind', name: bilingual('时光倒流', 'Time Rewind'),
+    description: bilingual('每关任意时刻，可重新开始本关1次（点击右上方时间按钮）', 'Restart the current stage once, at any time (tap the top-right time button)'),
+    detail: bilingual('使用右上角按钮，游玩或暂停时均可。恢复入关时的金币、炸药、道具、同一矿场和完整时限，已选能力保留，钱袋不重抽；双人共享1次，下关重置。', 'Use the top-right button during play or pause. Restores the starting gold, dynamite, upgrades, same mine, and full timer. Keeps run abilities without rerolling bags. Co-op shares one use, reset next stage.'),
+  },
 ];
 
 export function getAbility(id: AbilityId, mode: Mode, language: Language = DEFAULT_LANGUAGE): Ability {

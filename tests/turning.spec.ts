@@ -224,7 +224,7 @@ for (const mode of ['solo', 'coop'] as const) {
 }
 
 test('the same mobile launch button becomes a localized turn control and then hauls normally', async ({ browser }) => {
-  const context = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } });
+  const context = await browser.newContext({ hasTouch: true, viewport: { width: 844, height: 390 } });
   try {
     const page = await context.newPage();
     await openTurning(page, 'cargo=diamond');

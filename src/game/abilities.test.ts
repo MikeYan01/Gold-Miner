@@ -44,14 +44,14 @@ function openShop(engine: GameEngine, score = 2000): void {
 }
 
 describe('the shared four-pick draft', () => {
-  it('has twenty-three distinct abilities and offers three unowned choices without upgrades', () => {
-    expect(ABILITIES).toHaveLength(23);
-    expect(new Set(ABILITIES.map((ability) => ability.id)).size).toBe(23);
+  it('has twenty-four distinct abilities and offers three unowned choices without upgrades', () => {
+    expect(ABILITIES).toHaveLength(24);
+    expect(new Set(ABILITIES.map((ability) => ability.id)).size).toBe(24);
     expect(ABILITIES.map((ability) => ability.id)).toEqual(expect.arrayContaining([
       'might', 'gold-collector', 'diamond-collector', 'alchemy', 'aim-line', 'wide-claw', 'diamond-vein',
       'bomb-expert', 'diamond-moles', 'moneybags', 'thief', 'risk-reward', 'time-bank', 'airy-moles',
       'time-rush', 'regular-customer', 'archaeologist', 'clone', 'fossil-puzzle', 'gold-growth', 'travel-light',
-      'rock-crusher', 'right-angle-turn',
+      'rock-crusher', 'right-angle-turn', 'time-rewind',
     ]));
     const owned: AbilityId[] = ['might', 'thief', 'alchemy'];
     const offers = drawAbilityOffers(owned, createRandom(17));

@@ -743,7 +743,7 @@ export function drawAbilityIcon(c: Context, id: AbilityId, size: number): void {
     c.save(); c.translate(16, -9); gold(c, 27); c.restore();
     star(c, 34, 24, 11, '#e8912e');
     star(c, -29, -30, 7, '#e4b743');
-  } else if (id === 'time-bank' || id === 'time-rush') {
+  } else if (id === 'time-bank' || id === 'time-rush' || id === 'time-rewind') {
     rounded(c, -13, -43, 16, 10, 3, '#d6ad5a', '#8a6534', 2);
     ellipse(c, -5, -4, 30, 30, '#e4bc60', '#8a6534', 3);
     ellipse(c, -5, -4, 24, 24, '#f9ebc5', '#b18239', 1.5);
@@ -766,6 +766,11 @@ export function drawAbilityIcon(c: Context, id: AbilityId, size: number): void {
       }
       c.beginPath(); c.moveTo(-35, 24); c.quadraticCurveTo(-24, 40, -4, 35); c.stroke();
       path(c, [[-10, 29], [-3, 35], [-11, 41]], '#536b64');
+    } else if (id === 'time-rewind') {
+      c.strokeStyle = '#607c95';
+      c.lineWidth = 5;
+      c.beginPath(); c.arc(-5, -4, 39, Math.PI * 0.75, Math.PI * 1.15, true); c.stroke();
+      path(c, [[-42, -14], [-47, -32], [-29, -26]], '#607c95', '#3d576d', 1.5);
     } else {
       c.save(); c.translate(23, 25); gold(c, 18); c.restore();
       path(c, [[-40, 4], [-17, -12], [-21, 3], [-5, -2], [-31, 33], [-25, 12]],
